@@ -1,0 +1,3 @@
+*.pyc
+*/migrations/
+/static/loghost/bower_components/

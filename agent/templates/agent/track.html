@@ -1,0 +1,91 @@
+{% extends 'agent/base.html' %}
+
+{% block content %}
+<div class="ui main text container" style="margin-top:6em;margin-bottom:6em">
+  <form class="ui form">
+    <h1 class="ui header" style="margin-bottom:1em">Tracking</h1>
+
+    <div class="inline fields">
+      <div class="six wide field">
+        <input type="text" name="awb" placeholder="Air Waybill (AWB)" value="800123456789">
+      </div>
+      <div class="field">
+        <div class="ui primary right floated button" tabindex="0">Track</div>
+      </div>
+    </div>
+  </form>
+
+  <h3 class="ui dividing header" style="margin-top:3em">Tracking Detail</h3>
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>AWB</th>
+        <th>Layanan</th>
+        <th>Waktu Pengiriman</th>
+        <th>Asal</th>
+        <th>Tujuan</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>800123456789</td>
+        <td>EXPRESS20</td>
+        <td>2016-09-09 12:43</td>
+        <td>Jakarta</td>
+        <td>Tangerang</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>Barang</th>
+        <th>Nama Pengirim</th>
+        <th>Alamat</th>
+        <th>Kode Pos</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Surat</td>
+        <td>Indra Hermanto</td>
+        <td>Jalan Dukuh Atas No. 9, Kebon Sirih</td>
+        <td>10340</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>Waktu</th>
+        <th>Tempat</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>2016-09-09 12:43</td>
+        <td>Jakarta</td>
+        <td>Paket diterima oleh petugas JNE</td>
+      </tr>
+      <tr>
+        <td>2016-09-09 21:11</td>
+        <td>Jakarta</td>
+        <td>Diterima di Gateway</td>
+      </tr>
+      <tr>
+        <td>2016-09-10 09:01</td>
+        <td>Jakarta</td>
+        <td>Diproses di Gateway</td>
+      </tr>
+      <tr>
+        <td>2016-09-11 08:27</td>
+        <td>Tangerang</td>
+        <td>Diterima di Warehouse</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

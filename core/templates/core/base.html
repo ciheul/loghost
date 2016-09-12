@@ -1,0 +1,54 @@
+{% load static %}
+
+<!doctype>
+<html>
+  <head>
+    <title>LogHost</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{% static 'loghost/css/default.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'loghost/bower_components/semantic/dist/semantic.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'loghost/bower_components/datatables/media/css/dataTables.semanticui.min.css' %}">
+  </head>
+
+  <body>
+    <div class="ui fixed menu" style="border-bottom: 1px solid #dedede;margin-bottom:0px">
+      <div class="ui container">
+      <a class="{{ dashboard_active }} item" href="{% url 'ag-dashboard' %}">Beranda</a>
+      <a class="{{ tariff_active }} item" href="{% url 'ag-tariff' %}">Tarif</a>
+      <a class="{{ track_active }} item" href="{% url 'ag-track' %}">Track</a>
+      <a class="{{ report_active }} item" href="{% url 'ag-report' %}">Report</a>
+      <div class="right menu">
+        <div class="ui dropdown item">
+          Winnu Ayi Satria<i class="dropdown icon"></i>
+          <div class="menu">
+            <a class="item" href="{% url 'ag-profile' %}">Profil Agen</a>
+            <a class="item" href="{% url 'logout' %}">Logout</a>
+          </div>
+        </div>   
+        <div class="item">
+          <div class="ui primary button" onclick="location.href='{% url 'ag-fill' %}'">Input</div>
+        </div>
+      </div>
+      </div>
+    </div>   
+
+    {% block content %}{% endblock%}
+
+    <script type="text/javascript" src="{% static 'loghost/bower_components/jquery/dist/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'loghost/bower_components/datatables/media/js/jquery.dataTables.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'loghost/bower_components/datatables/media/js/dataTables.semanticui.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'loghost/bower_components/semantic/dist/semantic.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'loghost/bower_components/js-cookie/src/js.cookie.js' %}"></script>
+
+    <script>
+    $('.dropdown').dropdown();
+    </script>
+
+    {% block javascript %}{% endblock%}
+
+  </body>
+</html>

@@ -1,0 +1,148 @@
+{% extends 'agent/base.html' %}
+
+{% block content %}
+<div class="ui main text container" style="margin-top:6em;margin-bottom:6em">
+
+  <form class="ui form">
+    <h1 class="ui header">Consignment Note</h1>
+
+    <h3 class="ui dividing header">Pengirim</h3>
+    <div class="fields">
+      <div class="six wide field">
+        <label>Nama Lengkap</label>
+        <input type="text" name="shipping[first-name]" placeholder="Indra Hermanto">
+      </div>
+      <div class="ten wide field">
+        <label>Alamat</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+    </div>
+    <div class="fields">
+      <div class="six wide field">
+        <label>Telepon</label>
+        <input type="text" name="shipping[first-name]" placeholder="0811901234, 0811-90-1234">
+      </div>
+      <div class="eight wide field">
+        <label>Kota</label>
+        <select class="ui fluid dropdown">
+          <option value="">Pilih salah satu kota</option>
+          <option value="AL">Bandung</option>
+          <option value="AK">Jakarta</option>
+          <option value="AZ">Semarang</option>
+          <option value="AR">Surabaya</option>
+        </select>
+      </div>
+      <div class="two wide field">
+        <label>Kode Pos</label>
+        <input type="text" name="zip_code" placeholder="40191">
+      </div>
+    </div>
+  
+    <h3 class="ui dividing header">Penerima</h3>
+    <div class="fields">
+      <div class="six wide field">
+        <label>Nama Lengkap</label>
+        <input type="text" name="shipping[first-name]" placeholder="Narlia Fidelia">
+      </div>
+      <div class="ten wide field">
+        <label>Alamat</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+    </div>
+    <div class="fields">
+      <div class="six wide field">
+        <label>Telepon</label>
+        <input type="text" name="shipping[first-name]" placeholder="0811901234, 0811-90-1234">
+      </div>
+      <div class="eight wide field">
+        <label>Kota</label>
+        <select class="ui fluid dropdown">
+          <option value="">Pilih salah satu kota</option>
+          <option value="AL">Bandung</option>
+          <option value="AK">Jakarta</option>
+          <option value="AZ">Semarang</option>
+          <option value="AR">Surabaya</option>
+        </select>
+      </div>
+      <div class="two wide field">
+        <label>Kode Pos</label>
+        <input type="text" name="zip_code" placeholder="40191">
+      </div>
+    </div>
+  
+    <h3 class="ui dividing header">Layanan Pengiriman</h3>
+    <div class="three fields">
+      <div class="field">
+        <label>Layanan</label>
+        <select class="ui fluid dropdown">
+          <option value="AL" selected>EXPRESS20</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Jenis Kiriman</label>
+        <select class="ui fluid dropdown">
+          <option value="AL" selected>Parcel</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Pembayaran</label>
+        <select class="ui fluid dropdown">
+          <option value="AL" selected>Cash</option>
+        </select>
+      </div>
+    </div>
+  
+    <h3 class="ui dividing header">Barang</h3>
+    <div class="six fields">
+      <div class="field">
+        <label>Berat (kg)</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+      <div class="field">
+        <label>Panjang (cm)</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+      <div class="field">
+        <label>Lebar (cm)</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+      <div class="field">
+        <label>Tinggi (cm)</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+      <div class="field">
+        <label>Berat Volume (kg)</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+      <div class="field">
+        <label>Harga (IDR)</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+    </div>
+  
+    <h3 class="ui dividing header">Informasi Tambahan</h3>
+    <div class="fields">
+      <div class="eleven wide field">
+        <label>Nama Barang</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+      <div class="five wide field">
+        <label>Harga Barang</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+    </div>
+    <div class="two fields">
+      <div class="field">
+        <label>Instruksi Khusus</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+      <div class="field">
+        <label>Keterangan</label>
+        <input type="text" name="shipping[first-name]" placeholder="">
+      </div>
+    </div>
+  
+    <div class="ui primary right floated button" tabindex="0">Submit Order</div>
+  </form>
+</div>
+{% endblock %}

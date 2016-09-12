@@ -1,0 +1,44 @@
+html {
+}
+
+body {
+    font-family: 'Lato', sans-serif;
+}
+
+.question-category {
+    color: #999999;
+}
+
+.question-question {
+    font-weight: bold;
+    font-family: 'Roboto', sans-serif;
+    font-size: 20px;
+}
+
+.ask {
+    background-color: #333333;
+    color: white;
+    padding: 0px 50px 46px 50px;
+}
+
+.ask-hint {
+    font-family: 'Lato', sans-serif;
+    font-size: 18px;
+    font-weight: normal;
+    line-height: 24px;
+    padding: 48px 0px 36px 0px;
+}
+
+.ask-question {
+    background-color: #333333;
+    border-top: 0px;
+    border-right: 0px;
+    border-bottom: 1px solid white;
+    border-left: 0px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 36px;
+    margin-bottom: 10px;
+    outline-width: 0px;
+    padding-bottom: 8px;
+    width: 100%;
+}

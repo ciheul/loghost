@@ -1,0 +1,19 @@
+Release 0.1
+===========
+- Module Account simple version
+
+- Module Internal
+  - Operator setting 
+  - Branch & agent setting
+  - Service & tariff setting
+  - Online shipment tracking
+  - Shipment status update
+  - Pickup status
+
+- Module Agent:
+  - Checking tariff
+  - Trace & tracking
+  - Shipment input
+  - Pick up instruction
+  - Online report
+  - Print connote

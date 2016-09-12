@@ -1,0 +1,76 @@
+{% extends 'agent/base.html' %}
+
+{% block content %}
+<div class="ui main text container" style="margin-top:6em;margin-bottom:6em">
+  <form class="ui form">
+    <h1 class="ui header" style="margin-bottom:1em">Tarif</h1>
+
+    <div class="two fields">
+      <div class="field">
+        <label>Asal</label>
+        <input type="text" name="origin" value="Jakarta">
+      </div>
+      <div class="field">
+        <label>Tujuan</label>
+        <input type="text" name="destination" value="Tangerang">
+      </div>
+    </div>
+
+    <div class="four fields">
+      <div class="field">
+        <label>Berat (kg)</label>
+        <input type="text" name="weight" value="1">
+      </div>
+      <div class="field">
+        <label>Panjang (cm)</label>
+        <input type="text" name="length">
+      </div>
+      <div class="field">
+        <label>Lebar (cm)</label>
+        <input type="text" name="width">
+      </div>
+      <div class="field">
+        <label>Tinggi (cm)</label>
+        <input type="text" name="height">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="ui primary right floated button" tabindex="0">Track</div>
+    </div>
+  </form>
+
+  <h3 class="ui dividing header" style="margin-top:6em">Tarif Detail</h3>
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>Layanan</th>
+        <th>Tipe Pengiriman</th>
+        <th>Tarif (IDR)</th>
+        <th>Estimasi Hari</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>EXPRESS15</td>
+        <td>Dokumen</td>
+        <td>15.000</td>
+        <td>1-2</td>
+      </tr>
+      <tr>
+        <td>EXPRESS20</td>
+        <td>Dokumen</td>
+        <td>20.000</td>
+        <td>1-2</td>
+      </tr>
+      <tr>
+        <td>EXPRESS25</td>
+        <td>Dokumen</td>
+        <td>25.000</td>
+        <td>1-2</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+{% endblock %}
