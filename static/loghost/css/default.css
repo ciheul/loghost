@@ -5,6 +5,10 @@ body {
     font-family: 'Lato', sans-serif;
 }
 
+.ui.container.white {
+    color: white;
+}
+
 .question-category {
     color: #999999;
 }

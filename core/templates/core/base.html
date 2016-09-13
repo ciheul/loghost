@@ -15,24 +15,19 @@
   </head>
 
   <body>
-    <div class="ui fixed menu" style="border-bottom: 1px solid #dedede;margin-bottom:0px">
+    <div class="ui fixed menu" style="border-bottom: 1px solid #dedede;margin-bottom:0px;background-color:teal">
       <div class="ui container">
-      <a class="{{ dashboard_active }} item" href="{% url 'ag-dashboard' %}">Beranda</a>
-      <a class="{{ tariff_active }} item" href="{% url 'ag-tariff' %}">Tarif</a>
-      <a class="{{ track_active }} item" href="{% url 'ag-track' %}">Track</a>
-      <a class="{{ report_active }} item" href="{% url 'ag-report' %}">Report</a>
-      <div class="right menu">
-        <div class="ui dropdown item">
-          Winnu Ayi Satria<i class="dropdown icon"></i>
-          <div class="menu">
-            <a class="item" href="{% url 'ag-profile' %}">Profil Agen</a>
-            <a class="item" href="{% url 'logout' %}">Logout</a>
-          </div>
-        </div>   
-        <div class="item">
-          <div class="ui primary button" onclick="location.href='{% url 'ag-fill' %}'">Input</div>
+        <a class="{{ dashboard_active }} item" href="{% url 'core-dashboard' %}" style="color:white">Beranda</a>
+        <a class="{{ agent_active }} item" href="{% url 'core-agent' %}" style="color:white">Agen</a>
+        <div class="right menu">
+          <div class="ui dropdown item" style="color:white">
+            Winnu Ayi Satria<i class="dropdown icon"></i>
+            <div class="menu">
+              <a class="item" href="{% url 'ag-profile' %}" style="color:white">Profil Agen</a>
+              <a class="item" href="{% url 'logout' %}" style="color:white">Logout</a>
+            </div>
+          </div>   
         </div>
-      </div>
       </div>
     </div>   
 
@@ -43,6 +38,7 @@
     <script type="text/javascript" src="{% static 'loghost/bower_components/datatables/media/js/dataTables.semanticui.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'loghost/bower_components/semantic/dist/semantic.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'loghost/bower_components/js-cookie/src/js.cookie.js' %}"></script>
+    <script type="text/javascript" src="{% static 'loghost/bower_components/underscore/underscore-min.js' %}"></script>
 
     <script>
     $('.dropdown').dropdown();
