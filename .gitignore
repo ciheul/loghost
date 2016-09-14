@@ -2,3 +2,4 @@
 */migrations/
 */static/*/bower_components/
 /static/loghost/bower_components/
+/loghost/config.py
