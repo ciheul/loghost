@@ -42,3 +42,101 @@ class Site(models.Model):
 
     def __unicode__(self):
         return self.name
+
+class ItemStatus(models.Model):
+    name = models.CharField(max_length=50, null=True, blank=True)
+
+    def __unicode__(self):
+        return self.name
+
+class Item(models.Model):
+    user = models.ForeignKey('account.CustomUser')
+    awb = models.CharField(max_length=20, unique=True)
+    sender_name = models.CharField(max_length=50)
+    sender_address = models.CharField(max_length=100)
+    sender_city= models.ForeignKey(City),
+    sender_zip_code = models.IntegerField(null=True, blank=True)
+    sender_phone = models.CharField(max_length=15)
+    receiver_name = models.CharField(max_length=50)
+    receiver_address = models.CharField(max_length=100)
+    receiver_city= models.ForeignKey(City),
+    receiver_zip_code = models.IntegerField(null=True, blank=True)
+    receiver_phone = models.CharField(max_length=15)
+    good_name = models.CharField(max_length=50, null=True, blank=True)
+    good_value = models.CharField(max_length=50, null=True, blank=True)
+    information = models.CharField(max_length=100, null=True, blank=True)
+    instruction = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    def __unicode__(self):
+        return self.awb
+
+
+class ItemSite(models.Model):
+    item = models.ForeignKey('Item', null=True, blank=True)
+    site = models.ForeignKey('Site', null=True, blank=True)
+    rack_id = models.CharField(max_length=5, null=True, blank=True)
+    received_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    received_by = models.CharField(max_length=50, null=True, blank=True)
+    sent_at = models.DateTimeField( null=True, blank=True)
+    sent_by = models.CharField(max_length=50, null=True, blank=True)
+    item_status= models.ForeignKey('ItemStatus', null=True, blank=True)
+    description = models.CharField(max_length=100, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+
+    def __unicode__(self):
+        return 'item %s - site %s' %(self.item, self.site)
+
+class Shipment(models.Model):
+    cost = models.IntegerField( null=True, blank=True)
+    transportation = models.ForeignKey('Transportation', null=True, blank=True)
+    sent_by = models.CharField(max_length=20, null=True, blank=True)
+    sent_at = models.DateTimeField( null=True, blank=True)
+    received_by = models.CharField(max_length=20, null=True, blank=True)
+    received_at = models.DateTimeField( null=True, blank=True)
+    origin = models.CharField(max_length=20, null=True, blank=True)
+    origin_site= models.ForeignKey('Site', null=True, blank=True, 
+                                    related_name='origin')
+    destination = models.CharField(max_length=20, null=True, blank=True)
+    destination_site= models.ForeignKey('Site', null=True, blank=True, 
+                                    related_name='destination')
+    
+
+    def __unicode__(self):
+        return 'transportaion %s' %(self.transportation)
+
+class Transportation(models.Model):
+    identifier = models.CharField(max_length=20)
+    transportation_type = models.ForeignKey('TransportationType')
+    origin_city= models.ForeignKey('City', null=True, blank=True, 
+                                    related_name='origin')
+    destination= models.ForeignKey('City', null=True, blank=True, 
+                                    related_name='destination')
+    departed_at = models.DateTimeField( null=True, blank=True)
+    arrived_at = models.DateTimeField( null=True, blank=True)
+    base = models.CharField(max_length=20, null=True, blank=True)
+    operator = models.CharField(max_length=50, null=True, blank=True)
+    operator_phone = models.CharField(max_length=15, null=True, blank=True)
+    capacity = models.CharField(max_length=2, null=True, blank=True)
+
+    def __unicode__(self):
+        return self.identifier
+    
+
+class TransportationType(models.Model):
+    name = models.CharField(max_length=20, null=True, blank=True)
+
+    def __unicode__(self):
+        return self.name
+
+
+class ItemShipment(models.Model):
+    item = models.ForeignKey('Item', null=True, blank=True)
+    shipment = models.ForeignKey('Shipment', null=True, blank=True)
+    bag_id = models.CharField(max_length=20, null=True, blank=True)
+    item_shipment_status_id = models.ForeignKey('ItemStatus', null=True, 
+                                                blank=True)
+
+    def __unicode__(self):
+        return 'item_id %s - shipment_id %s' %(self.item_id, self.shipment_id)
