@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from core.models import City, Site, SiteType
+
+
+admin.site.register(City)
+admin.site.register(Site)
+admin.site.register(SiteType)

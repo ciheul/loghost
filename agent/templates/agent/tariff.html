@@ -8,11 +8,21 @@
     <div class="two fields">
       <div class="field">
         <label>Asal</label>
-        <input type="text" name="origin" value="Jakarta">
+        <select class="ui fluid dropdown" name="origin">
+          <option value="">Pilih salah satu kota</option>
+          {% for city in cities %}
+            <option value="{{ city.pk }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
       </div>
       <div class="field">
         <label>Tujuan</label>
-        <input type="text" name="destination" value="Tangerang">
+        <select class="ui fluid dropdown" name="destination">
+          <option value="">Pilih salah satu kota</option>
+          {% for city in cities %}
+            <option value="{{ city.pk }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
       </div>
     </div>
 
@@ -36,11 +46,25 @@
     </div>
 
     <div class="field">
-      <div class="ui primary right floated button" tabindex="0">Track</div>
+      <div class="ui primary right floated button" id="check-tariff-btn" tabindex="0">Check</div>
     </div>
   </form>
 
+  <div id="tariff-container"></div>
+</div>
+
+<script type="text/template" id="tariff-list-template">
   <h3 class="ui dividing header" style="margin-top:6em">Tarif Detail</h3>
+  <div class="ui cards">
+    <div class="card">
+      <div class="content center aligned">
+        <div class="ui small statistic">
+          <div class="value"><%= weight %></div>
+          <div class="label">Kilogram</div>
+        </div>
+      </div>
+    </div>
+  </div>
   <table class="ui celled table">
     <thead>
       <tr>
@@ -50,27 +74,54 @@
         <th>Estimasi Hari</th>
       </tr>
     </thead>
-    <tbody>
-      <tr>
-        <td>EXPRESS15</td>
-        <td>Dokumen</td>
-        <td>15.000</td>
-        <td>1-2</td>
-      </tr>
-      <tr>
-        <td>EXPRESS20</td>
-        <td>Dokumen</td>
-        <td>20.000</td>
-        <td>1-2</td>
-      </tr>
-      <tr>
-        <td>EXPRESS25</td>
-        <td>Dokumen</td>
-        <td>25.000</td>
-        <td>1-2</td>
-      </tr>
-    </tbody>
+    <tbody id="tariff-list"></tbody>
   </table>
+</script>
 
-</div>
+<script type="text/template" id="tariff-item-template">
+      <tr>
+        <td><%= name %></td>
+        <td><%= type %></td>
+        <td><%= price %></td>
+        <td><%= duration %></td>
+      </tr>
+</script>
+{% endblock %}
+
+{% block javascript %}
+  <script>
+    $('#check-tariff-btn').click(function() {
+      var data = $('form').serializeObject();
+      data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+      $.ajax({
+        url: "{% url 'api-tariff-check' %}",
+        method: 'GET',
+        data: data,
+      }).done(function(response) {
+        console.log(response);
+        {# $('#create-user-form').removeClass('loading'); #}
+
+        $('#tariff-container').empty();
+
+        if (response.success === -1) {
+          return;
+        }
+
+        var tableTemplateFunc = _.template($('#tariff-list-template').html());
+        var tableTemplate = tableTemplateFunc({ weight: response.weight });
+        $('#tariff-container').append(tableTemplate);
+
+        var rowTemplateFunc = _.template($('#tariff-item-template').html());
+        {# var rows = [ #}
+        {#   { name: 'EXPRESS', type: 'Parcel', price: '18.000', duration: '1-2'}, #}
+        {#   { name: 'EXPRESS15', type: 'Parcel', price: '20.000', duration: '1-2'}, #}
+        {# ]; #}
+
+        response.data.forEach(function(row) {
+          $('#tariff-list').append(rowTemplateFunc(row))
+        });
+      });
+    });
+  </script>
 {% endblock %}

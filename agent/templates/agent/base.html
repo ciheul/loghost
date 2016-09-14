@@ -17,15 +17,15 @@
   <body>
     <div class="ui fixed menu" style="border-bottom: 1px solid #dedede;margin-bottom:0px">
       <div class="ui container">
-      <a class="{{ dashboard_active }} item" href="{% url 'ag-dashboard' %}">Beranda</a>
-      <a class="{{ tariff_active }} item" href="{% url 'ag-tariff' %}">Tarif</a>
+      <a class="{{ dashboard_active }} item" href="{% url 'ag-dashboard' %}">Home</a>
+      <a class="{{ tariff_active }} item" href="{% url 'ag-tariff' %}">Tariff</a>
       <a class="{{ track_active }} item" href="{% url 'ag-track' %}">Track</a>
       <a class="{{ report_active }} item" href="{% url 'ag-report' %}">Report</a>
       <div class="right menu">
         <div class="ui dropdown item">
           Winnu Ayi Satria<i class="dropdown icon"></i>
           <div class="menu">
-            <a class="item" href="{% url 'ag-profile' %}">Profil Agen</a>
+            <a class="item" href="{% url 'ag-profile' %}">Agent Profil</a>
             <a class="item" href="{% url 'logout' %}">Logout</a>
           </div>
         </div>   
@@ -43,6 +43,8 @@
     <script type="text/javascript" src="{% static 'loghost/bower_components/datatables/media/js/dataTables.semanticui.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'loghost/bower_components/semantic/dist/semantic.min.js' %}"></script>
     <script type="text/javascript" src="{% static 'loghost/bower_components/js-cookie/src/js.cookie.js' %}"></script>
+    <script type="text/javascript" src="{% static 'loghost/bower_components/underscore/underscore-min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'loghost/js/misc.js' %}"></script>
 
     <script>
     $('.dropdown').dropdown();

@@ -2,17 +2,17 @@
 
 {% block content %}
 <div class="ui main container" style="margin-top:6em;margin-bottom:6em">
-  <h1 class="ui header" style="margin-bottom:1em">Agent</h1>
+  <h1 class="ui header" style="margin-bottom:1em">Agent Management</h1>
 
-  <div class="ui small primary button" id="create-agent-modal-btn">Agen Baru</div>
+  <div class="ui small primary button" id="create-agent-modal-btn">Create Agent</div>
 
   <table id="report" class="ui celled table">
     <thead>
       <tr>
-        <th>Nama</th>
-        <th>Tipe</th>
-        <th>Alamat</th>
-        <th>Kota</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Address</th>
+        <th>City</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -24,7 +24,7 @@
 <script type="text/template" id="create-agent-modal-template">
   <div class="ui small modal" id="create-agent-modal">
     <i class="close icon"></i>
-    <div class="header">Tambah Agen Baru</div>
+    <div class="header">Create Agent</div>
     <div class="content">
       <form class="ui form" id="create-agent-form">
         <div class="field">
@@ -64,19 +64,18 @@
       </form>
     </div>
     <div class="actions">
-      <div class="ui black deny button">Batal</div>
+      <div class="ui black deny button">Cancel</div>
       <div class="ui green button" id="create-agent-button">
         Tambah Agen
       </div>
     </div>
   </div>
-
 </script>
 
 <script type="text/template" id="update-agent-modal-template">
   <div class="ui small modal" id="update-agent-modal">
     <i class="close icon"></i>
-    <div class="header">Ubah Data Agen</div>
+    <div class="header">Update Agent</div>
     <div class="content">
       <form class="ui form" id="update-agent-form">
         <input type="hidden" name="pk" value="<%= pk %>">
@@ -106,21 +105,11 @@
             {% endfor %}
           </select>
         </div>
-        {# <div class="field"> #}
-        {#   <label>Kode Pos</label> #}
-        {#   <input type="text" name="zip_code" placeholder="40191"> #}
-        {# </div> #}
-        {# <div class="field"> #}
-        {#   <label>Telepon</label> #}
-        {#   <input type="text" name="phone" placeholder="0811901234, 0811-90-1234"> #}
-        {# </div> #}
       </form>
     </div>
     <div class="actions">
-      <div class="ui black deny button">Batal</div>
-      <div class="ui green button" id="update-agent-button">
-        Ubah
-      </div>
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="update-agent-button">Update Agent</div>
     </div>
   </div>
 </script>
@@ -128,11 +117,11 @@
 <script type="text/template" id="delete-agent-modal-template">
   <div class="ui small modal" id="delete-agent-modal">
     <i class="close icon"></i>
-    <div class="header">Hapus Agen</div>
+    <div class="header">Delete Agent</div>
     <div class="content delete-content"></div>
     <div class="actions">
-      <div class="ui black deny button">Batal</div>
-      <div class="ui red button" id="delete-agent-button" data-pk=<%= pk %>>Hapus Agen</div>
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui red button" id="delete-agent-button" data-pk=<%= pk %>>Delete Agent</div>
     </div>
   </div>
 </script>
@@ -179,6 +168,7 @@
         targets: -1,
         render: function(data, type, row, meta) {
           return ''
+            + '<div class="mini ui primary button" onclick="window.location.href=\'' + row.user_url + '\'">User</div>'
             + '<div class="mini ui primary button" data-action="update" data-pk=' + row.action + ' data-name="' + row.name + '" data-address="' + row.address + '" data-type=' + row.type_pk +' data-city=' + row.city_pk + '>Update</div>'
             + '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-name="' + row.name + '">Delete</div>';
         }
@@ -189,6 +179,7 @@
   // add event to update button and delete button
   $('#report tbody').click('button', function(e) {
     var button = $(e.target);
+
     // UPDATE AGENT
     if (button.data('action') === 'update') {
       // set up modal template and pass agent pk

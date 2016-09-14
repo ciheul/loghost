@@ -3,6 +3,8 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
+from core.models import City
+
 
 class AgentView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -29,7 +31,10 @@ class TrackView(AgentView):
 
 class TariffView(AgentView):
     def get(self, request):
-        context = { 'tariff_active': 'active' }
+        context = {
+            'tariff_active': 'active',
+            'cities': City.objects.all().order_by('name'),
+        }
         return render(request, 'agent/tariff.html', context)
 
 
