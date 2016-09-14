@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from core.models import City, Site, SiteType
+from core.models import City, Service, Site, SiteType
 
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -21,14 +21,18 @@ class DashboardView(StaffView):
 
 class TariffManagementView(StaffView):
     def get(self, request):
-        context = { 'dashboard_active': 'active' }
+        context = {
+            'tariff_active': 'active',
+            'cities': City.objects.all(),
+            'services': Service.objects.all()
+        }
         return render(request, 'core/tariff-management.html', context)
 
 
 class AgentManagementView(StaffView):
     def get(self, request):
         context = {
-            'management_active': 'active',
+            'agent_active': 'active',
             'cities': City.objects.all(),
             'site_types': SiteType.objects.all()
             # 'site_types': SiteType.objects.filter(

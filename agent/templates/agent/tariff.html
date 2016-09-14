@@ -68,10 +68,11 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>Layanan</th>
-        <th>Tipe Pengiriman</th>
-        <th>Tarif (IDR)</th>
-        <th>Estimasi Hari</th>
+        <th>Origin</th>
+        <th>Destination</th>
+        <th>Service</th>
+        <th>Price (IDR)</th>
+        <th>ETA</th>
       </tr>
     </thead>
     <tbody id="tariff-list"></tbody>
@@ -80,11 +81,19 @@
 
 <script type="text/template" id="tariff-item-template">
       <tr>
-        <td><%= name %></td>
-        <td><%= type %></td>
+        <td><%= origin %></td>
+        <td><%= destination %></td>
+        <td><%= service %></td>
         <td><%= price %></td>
         <td><%= duration %></td>
       </tr>
+</script>
+
+<script type="text/template" id="tariff-error-template">
+<div class="ui negative message" style="margin-top:6em">
+  <i class="close icon"></i>
+  <div class="header"><%= message %></div>
+</p></div>
 </script>
 {% endblock %}
 
@@ -99,12 +108,19 @@
         method: 'GET',
         data: data,
       }).done(function(response) {
-        console.log(response);
         {# $('#create-user-form').removeClass('loading'); #}
 
         $('#tariff-container').empty();
 
         if (response.success === -1) {
+          var messageTemplateFunc = _.template($('#tariff-error-template').html());
+          var messageTemplate = messageTemplateFunc({ message: response.message });
+          $('#tariff-container').append(messageTemplate);
+
+          $('.message .close').on('click', function() {
+            $(this).closest('.message').transition('fade');
+          });
+
           return;
         }
 

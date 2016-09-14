@@ -10,6 +10,21 @@ class City(models.Model):
         return self.name
 
 
+class Service(models.Model):
+    name = models.CharField(max_length=20, unique=True)
+
+
+class Tariff(models.Model):
+    origin = models.ForeignKey(City, related_name='origin')
+    destination = models.ForeignKey(City, related_name='destination')
+    service = models.ForeignKey(Service)
+    price = models.IntegerField()
+    duration = models.CharField(max_length=10)
+
+    class Meta:
+        unique_together = ('origin', 'destination', 'service')
+
+
 class SiteType(models.Model):
     name = models.CharField(max_length=20, unique=True)
 

@@ -4,7 +4,7 @@
 <div class="ui main container" style="margin-top:6em;margin-bottom:6em">
   <h1 class="ui header" style="margin-bottom:1em">Tariff Management</h1>
 
-  <div class="ui small primary button" id="create-agent-modal-btn">Create Agent</div>
+  <div class="ui small primary button" id="create-tariff-modal-btn">Create Tariff</div>
 
   <table id="report" class="ui celled table">
     <thead>
@@ -21,107 +21,115 @@
 
 <div id="modal-container"></div>
 
-<script type="text/template" id="create-agent-modal-template">
-  <div class="ui small modal" id="create-agent-modal">
+<script type="text/template" id="create-tariff-modal-template">
+  <div class="ui small modal" id="create-tariff-modal">
     <i class="close icon"></i>
-    <div class="header">Create Agent</div>
+    <div class="header">Create Tariff</div>
     <div class="content">
-      <form class="ui form" id="create-agent-form">
+      <form class="ui form" id="create-tariff-form">
         <div class="field">
-          <label>Nama Perusahaan</label>
-          <input type="text" name="name" placeholder="CV. Bandung Kurir Express">
-        </div>
-        <div class="field">
-          <label>Tipe</label>
-          <select class="ui fluid dropdown" name="type">
-            <option value="">Pilih Agen atau Sub Agen</option>
-            {% for site_type in site_types %}
-              <option value="{{ site_type.pk }}">{{ site_type.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field">
-          <label>Alamat</label>
-          <input type="text" name="address" placeholder="Jalan Batununggal Jelita II No. 22">
-        </div>
-        <div class="field">
-          <label>Kota</label>
-          <select class="ui fluid dropdown" name="city">
-            <option value="">Pilih salah satu kota</option>
+          <label>Origin</label>
+          <select class="ui fluid dropdown" name="origin">
+            <option value="">Choose origin city</option>
             {% for city in cities %}
               <option value="{{ city.pk }}">{{ city.name }}</option>
             {% endfor %}
           </select>
         </div>
-        {# <div class="field"> #}
-        {#   <label>Kode Pos</label> #}
-        {#   <input type="text" name="zip_code" placeholder="40191"> #}
-        {# </div> #}
-        {# <div class="field"> #}
-        {#   <label>Telepon</label> #}
-        {#   <input type="text" name="phone" placeholder="0811901234, 0811-90-1234"> #}
-        {# </div> #}
+        <div class="field">
+          <label>Destination</label>
+          <select class="ui fluid dropdown" name="destination">
+            <option value="">Choose destination city</option>
+            {% for city in cities %}
+              <option value="{{ city.pk }}">{{ city.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Service</label>
+          <select class="ui fluid dropdown" name="service">
+            <option value="">Choose service</option>
+            {% for service in services %}
+              <option value="{{ service.pk }}">{{ service.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Price</label>
+          <input type="text" name="price">
+        </div>
+        <div class="field">
+          <label>Duration</label>
+          <input type="text" name="duration">
+        </div>
       </form>
     </div>
     <div class="actions">
       <div class="ui black deny button">Cancel</div>
-      <div class="ui green button" id="create-agent-button">
-        Tambah Agen
-      </div>
+      <div class="ui green button" id="create-tariff-button">Create</div>
     </div>
   </div>
 </script>
 
-<script type="text/template" id="update-agent-modal-template">
-  <div class="ui small modal" id="update-agent-modal">
+<script type="text/template" id="update-tariff-modal-template">
+  <div class="ui small modal" id="update-tariff-modal">
     <i class="close icon"></i>
-    <div class="header">Update Agent</div>
+    <div class="header">Update Tariff</div>
     <div class="content">
-      <form class="ui form" id="update-agent-form">
+      <form class="ui form" id="update-tariff-form">
         <input type="hidden" name="pk" value="<%= pk %>">
         <div class="field">
-          <label>Nama Perusahaan</label>
-          <input type="text" name="name" placeholder="CV. Bandung Kurir Express" value="<%= name %>">
-        </div>
-        <div class="field">
-          <label>Tipe</label>
-          <select class="ui fluid dropdown" name="type">
-            <option value="">Pilih Agen atau Sub Agen</option>
-            {% for site_type in site_types %}
-              <option value="{{ site_type.pk }}" <% if (type_pk === {{ site_type.pk }}) { %>selected<% } %>>{{ site_type.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field">
-          <label>Alamat</label>
-          <input type="text" name="address" placeholder="Jalan Batununggal Jelita II No. 22" value="<%= address %>">
-        </div>
-        <div class="field">
-          <label>Kota</label>
-          <select class="ui fluid dropdown" name="city">
-            <option value="">Pilih salah satu kota</option>
+          <label>Origin</label>
+          <select class="ui fluid dropdown" name="origin">
+            <option value="">Choose origin city</option>
             {% for city in cities %}
-              <option value="{{ city.pk }}" <% if (city_pk === {{ city.pk }}) { %>selected<% } %>>{{ city.name }}</option>
+              <option value="{{ city.pk }}" <% if (origin_pk === {{ city.pk }}) { %>selected<% } %>>{{ city.name }}</option>
             {% endfor %}
           </select>
+        </div>
+        <div class="field">
+          <label>Destination</label>
+          <select class="ui fluid dropdown" name="destination">
+            <option value="">Choose destination city</option>
+            {% for city in cities %}
+              <option value="{{ city.pk }}" <% if (destination_pk === {{ city.pk }}) { %>selected<% } %>>{{ city.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Service</label>
+          <select class="ui fluid dropdown" name="service">
+            <option value="">Choose service</option>
+            {% for service in services %}
+              <option value="{{ service.pk }}" <% if (service_pk === {{ service.pk }}) { %>selected<% } %>>{{ service.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Price</label>
+          <input type="text" name="price" value="<%= price %>">
+        </div>
+        <div class="field">
+          <label>Duration</label>
+          <input type="text" name="duration" value="<%= duration %>">
         </div>
       </form>
     </div>
     <div class="actions">
       <div class="ui black deny button">Cancel</div>
-      <div class="ui green button" id="update-agent-button">Update Agent</div>
+      <div class="ui green button" id="update-tariff-button">Update</div>
     </div>
   </div>
 </script>
 
-<script type="text/template" id="delete-agent-modal-template">
-  <div class="ui small modal" id="delete-agent-modal">
+<script type="text/template" id="delete-tariff-modal-template">
+  <div class="ui small modal" id="delete-tariff-modal">
     <i class="close icon"></i>
-    <div class="header">Delete Agent</div>
+    <div class="header">Delete Tariff</div>
     <div class="content delete-content"></div>
     <div class="actions">
       <div class="ui black deny button">Cancel</div>
-      <div class="ui red button" id="delete-agent-button" data-pk=<%= pk %>>Delete Agent</div>
+      <div class="ui red button" id="delete-tariff-button" data-pk=<%= pk %>>Delete</div>
     </div>
   </div>
 </script>
@@ -153,14 +161,14 @@
     bInfo: false,
     {# serverSide: true, #}
     ajax: {
-      url: "{% url 'api-agent-read' %}",
+      url: "{% url 'api-tariff-read' %}",
       type: 'GET'
     },
     columns: [
-      { data: 'name', className: 'dt-left' },
-      { data: 'type', className: 'dt-left' },
-      { data: 'address', className: 'dt-left' },
-      { data: 'city', className: 'dt-left' },
+      { data: 'origin', className: 'dt-left' },
+      { data: 'destination', className: 'dt-left' },
+      { data: 'service', className: 'dt-left' },
+      { data: 'price', className: 'dt-left' },
       { data: 'action', className: 'dt-left' },
     ],
     columnDefs: [
@@ -168,9 +176,8 @@
         targets: -1,
         render: function(data, type, row, meta) {
           return ''
-            + '<div class="mini ui primary button" onclick="window.location.href=\'' + row.user_url + '\'">User</div>'
-            + '<div class="mini ui primary button" data-action="update" data-pk=' + row.action + ' data-name="' + row.name + '" data-address="' + row.address + '" data-type=' + row.type_pk +' data-city=' + row.city_pk + '>Update</div>'
-            + '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-name="' + row.name + '">Delete</div>';
+            + '<div class="mini ui primary button" data-action="update" data-pk=' + row.action + ' data-origin="' + row.origin_pk + '" data-destination="' + row.destination_pk + '" data-service="' + row.service_pk + '" data-price="' + row.price + '" data-duration="' + row.duration + '">Update</div>'
+            + '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-origin="' + row.origin+ '" data-destination="' + row.destination + '" data-service="' + row.service + '">Delete</div>';
         }
       }
     ]
@@ -182,30 +189,31 @@
 
     // UPDATE AGENT
     if (button.data('action') === 'update') {
-      // set up modal template and pass agent pk
-      var templateFunc = _.template($('#update-agent-modal-template').html());
+      // set up modal template and pass tariff pk
+      var templateFunc = _.template($('#update-tariff-modal-template').html());
       var modalTemplate = templateFunc({
         pk: button.data('pk'),
-        name: button.data('name'),
-        address: button.data('address'),
-        type_pk: button.data('type'),
-        city_pk: button.data('city'),
+        origin_pk: button.data('origin'),
+        destination_pk: button.data('destination'),
+        service_pk: button.data('service'),
+        price: button.data('price'),
+        duration: button.data('duration'),
       });
 
       $('#modal-container').append(modalTemplate);
 
       // show modal and destroy when closing
-      $('#update-agent-modal')
+      $('#update-tariff-modal')
         .modal({
           onHidden: function() { $('.ui.dimmer').empty(); }
         }).modal('show');
 
-      $('#update-agent-button').click(function(e) {
+      $('#update-tariff-button').click(function(e) {
         var data = $('form').serializeObject();
         data.csrfmiddlewaretoken = Cookies.get('csrftoken');
 
         $.ajax({
-          url: "{% url 'api-agent-update' %}",
+          url: "{% url 'api-tariff-update' %}",
           method: 'POST',
           data: data,
         }).done(function(response) {
@@ -219,29 +227,29 @@
 
     // DELETE AGENT
     if (button.data('action') === 'delete') {
-      // set up modal template and pass agent pk
-      var templateFunc = _.template($('#delete-agent-modal-template').html());
+      // set up modal template and pass tariff pk
+      var templateFunc = _.template($('#delete-tariff-modal-template').html());
       var modalTemplate = templateFunc({ pk: button.data('pk') });
       $('#modal-container').append(modalTemplate);
 
       // show modal and destroy when closing
-      $('#delete-agent-modal')
+      $('#delete-tariff-modal')
         .modal({
           onHidden: function() { $('.ui.dimmer').empty(); }
         }).modal('show');
 
       // write content to modal
-      var content = "Apakah Anda yakin ingin menghapus agen <b>" + button.data('name') + "</b>?";
+      var content = "Are you sure to delete tariff for <b>" + button.data('service') + "</b> service from <b>" + button.data('origin') + "</b> to <b>" + button.data('destination') + "</b>?";
       $('.delete-content').append(content);
 
-      $('#delete-agent-button').click(function(e) {
+      $('#delete-tariff-button').click(function(e) {
         var data = {
           csrfmiddlewaretoken: Cookies.get('csrftoken'),
           pk: $(e.target).data('pk')
         }
 
         $.ajax({
-          url: "{% url 'api-agent-delete' %}",
+          url: "{% url 'api-tariff-delete' %}",
           method: 'POST',
           data: data,
         }).done(function(response) {
@@ -251,14 +259,14 @@
     }
   });
 
-  // show create agent modal
-  $('#create-agent-modal-btn').click(function() {
-    var templateFunc = _.template($('#create-agent-modal-template').html());
+  // show create tariff modal
+  $('#create-tariff-modal-btn').click(function() {
+    var templateFunc = _.template($('#create-tariff-modal-template').html());
     var modalTemplate = templateFunc();
 
     $('#modal-container').append(modalTemplate);
 
-    $('#create-agent-modal')
+    $('#create-tariff-modal')
       .modal({
         onHidden: function() { $('.ui.dimmer').empty(); }
       }).modal('show');
@@ -267,20 +275,20 @@
     $('.dropdown').dropdown();
 
     // CREATE AGENT
-    $('#create-agent-button').click(function(e) {
+    $('#create-tariff-button').click(function(e) {
       e.preventDefault();
 
-      $('#create-agent-form').addClass('loading');
+      $('#create-tariff-form').addClass('loading');
 
       var data = $('form').serializeObject();
       data.csrfmiddlewaretoken = Cookies.get('csrftoken');
 
       $.ajax({
-        url: "{% url 'api-agent-create' %}",
+        url: "{% url 'api-tariff-create' %}",
         method: 'POST',
         data: data,
       }).done(function(response) {
-        $('#create-agent-form').removeClass('loading');
+        $('#create-tariff-form').removeClass('loading');
         window.location.reload();
       });
     });

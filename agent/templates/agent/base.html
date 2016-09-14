@@ -23,7 +23,7 @@
       <a class="{{ report_active }} item" href="{% url 'ag-report' %}">Report</a>
       <div class="right menu">
         <div class="ui dropdown item">
-          Winnu Ayi Satria<i class="dropdown icon"></i>
+          {{ request.user.email }}<i class="dropdown icon"></i>
           <div class="menu">
             <a class="item" href="{% url 'ag-profile' %}">Agent Profil</a>
             <a class="item" href="{% url 'logout' %}">Logout</a>

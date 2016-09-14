@@ -22,7 +22,7 @@
         <a class="{{ agent_active }} item" href="{% url 'core-agent' %}" style="color:white">Agent</a>
         <div class="right menu">
           <div class="ui dropdown item" style="color:white">
-            Winnu Ayi Satria<i class="dropdown icon"></i>
+            {{ request.user.email }}<i class="dropdown icon"></i>
             <div class="menu">
               <a class="item" href="{% url 'ag-profile' %}" style="color:white">Profile</a>
               <a class="item" href="{% url 'logout' %}" style="color:white">Logout</a>

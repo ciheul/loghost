@@ -15,6 +15,17 @@ urlpatterns = [
 
     # API
 
+    # TARIFF
+    url(r'^api/tariff/$', api.TariffReadApi.as_view(), name='api-tariff-read'),
+    url(r'^api/tariff/create/$', api.TariffCreateApi.as_view(),
+        name='api-tariff-create'),
+    url(r'^api/tariff/update/$', api.TariffUpdateApi.as_view(),
+        name='api-tariff-update'),
+    url(r'^api/tariff/delete/$', api.TariffDeleteApi.as_view(),
+        name='api-tariff-delete'),
+    url(r'^api/tariff/check/$', api.TariffCheckApi.as_view(),
+        name='api-tariff-check'),
+
     # AGENT
     url(r'^api/agent/$', api.AgentReadApi.as_view(), name='api-agent-read'),
     url(r'^api/agent/create/$', api.AgentCreateApi.as_view(),
@@ -33,8 +44,4 @@ urlpatterns = [
         name='api-user-update'),
     url(r'^api/user/delete$', api.UserDeleteApi.as_view(),
         name='api-user-delete'),
-
-    # TARIFF
-    url(r'^api/tariff/check/$', api.TariffCheckApi.as_view(),
-        name='api-tariff-check'),
 ]
