@@ -6,6 +6,8 @@ from core import api, views
 urlpatterns = [
     url(r'^dashboard/$', views.DashboardView.as_view(),
         name='core-dashboard'),
+    url(r'^management/tariff/$', views.TariffManagementView.as_view(),
+        name='core-tariff'),
     url(r'^management/agent/$', views.AgentManagementView.as_view(),
         name='core-agent'),
     url(r'^management/agent/(?P<site_pk>\d+)/user/$',

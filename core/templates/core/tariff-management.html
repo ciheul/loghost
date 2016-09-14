@@ -1,0 +1,289 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header" style="margin-bottom:1em">Tariff Management</h1>
+
+  <div class="ui small primary button" id="create-agent-modal-btn">Create Agent</div>
+
+  <table id="report" class="ui celled table">
+    <thead>
+      <tr>
+        <th>Origin</th>
+        <th>Destination</th>
+        <th>Service</th>
+        <th>Price</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+
+<div id="modal-container"></div>
+
+<script type="text/template" id="create-agent-modal-template">
+  <div class="ui small modal" id="create-agent-modal">
+    <i class="close icon"></i>
+    <div class="header">Create Agent</div>
+    <div class="content">
+      <form class="ui form" id="create-agent-form">
+        <div class="field">
+          <label>Nama Perusahaan</label>
+          <input type="text" name="name" placeholder="CV. Bandung Kurir Express">
+        </div>
+        <div class="field">
+          <label>Tipe</label>
+          <select class="ui fluid dropdown" name="type">
+            <option value="">Pilih Agen atau Sub Agen</option>
+            {% for site_type in site_types %}
+              <option value="{{ site_type.pk }}">{{ site_type.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Alamat</label>
+          <input type="text" name="address" placeholder="Jalan Batununggal Jelita II No. 22">
+        </div>
+        <div class="field">
+          <label>Kota</label>
+          <select class="ui fluid dropdown" name="city">
+            <option value="">Pilih salah satu kota</option>
+            {% for city in cities %}
+              <option value="{{ city.pk }}">{{ city.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {# <div class="field"> #}
+        {#   <label>Kode Pos</label> #}
+        {#   <input type="text" name="zip_code" placeholder="40191"> #}
+        {# </div> #}
+        {# <div class="field"> #}
+        {#   <label>Telepon</label> #}
+        {#   <input type="text" name="phone" placeholder="0811901234, 0811-90-1234"> #}
+        {# </div> #}
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="create-agent-button">
+        Tambah Agen
+      </div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="update-agent-modal-template">
+  <div class="ui small modal" id="update-agent-modal">
+    <i class="close icon"></i>
+    <div class="header">Update Agent</div>
+    <div class="content">
+      <form class="ui form" id="update-agent-form">
+        <input type="hidden" name="pk" value="<%= pk %>">
+        <div class="field">
+          <label>Nama Perusahaan</label>
+          <input type="text" name="name" placeholder="CV. Bandung Kurir Express" value="<%= name %>">
+        </div>
+        <div class="field">
+          <label>Tipe</label>
+          <select class="ui fluid dropdown" name="type">
+            <option value="">Pilih Agen atau Sub Agen</option>
+            {% for site_type in site_types %}
+              <option value="{{ site_type.pk }}" <% if (type_pk === {{ site_type.pk }}) { %>selected<% } %>>{{ site_type.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Alamat</label>
+          <input type="text" name="address" placeholder="Jalan Batununggal Jelita II No. 22" value="<%= address %>">
+        </div>
+        <div class="field">
+          <label>Kota</label>
+          <select class="ui fluid dropdown" name="city">
+            <option value="">Pilih salah satu kota</option>
+            {% for city in cities %}
+              <option value="{{ city.pk }}" <% if (city_pk === {{ city.pk }}) { %>selected<% } %>>{{ city.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="update-agent-button">Update Agent</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="delete-agent-modal-template">
+  <div class="ui small modal" id="delete-agent-modal">
+    <i class="close icon"></i>
+    <div class="header">Delete Agent</div>
+    <div class="content delete-content"></div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui red button" id="delete-agent-button" data-pk=<%= pk %>>Delete Agent</div>
+    </div>
+  </div>
+</script>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  $.fn.serializeObject = function()
+  {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+  };
+
+  // render table
+  $('#report').DataTable({
+    searching: false,
+    bLengthChange: false,
+    bInfo: false,
+    {# serverSide: true, #}
+    ajax: {
+      url: "{% url 'api-agent-read' %}",
+      type: 'GET'
+    },
+    columns: [
+      { data: 'name', className: 'dt-left' },
+      { data: 'type', className: 'dt-left' },
+      { data: 'address', className: 'dt-left' },
+      { data: 'city', className: 'dt-left' },
+      { data: 'action', className: 'dt-left' },
+    ],
+    columnDefs: [
+      {
+        targets: -1,
+        render: function(data, type, row, meta) {
+          return ''
+            + '<div class="mini ui primary button" onclick="window.location.href=\'' + row.user_url + '\'">User</div>'
+            + '<div class="mini ui primary button" data-action="update" data-pk=' + row.action + ' data-name="' + row.name + '" data-address="' + row.address + '" data-type=' + row.type_pk +' data-city=' + row.city_pk + '>Update</div>'
+            + '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-name="' + row.name + '">Delete</div>';
+        }
+      }
+    ]
+  });
+
+  // add event to update button and delete button
+  $('#report tbody').click('button', function(e) {
+    var button = $(e.target);
+
+    // UPDATE AGENT
+    if (button.data('action') === 'update') {
+      // set up modal template and pass agent pk
+      var templateFunc = _.template($('#update-agent-modal-template').html());
+      var modalTemplate = templateFunc({
+        pk: button.data('pk'),
+        name: button.data('name'),
+        address: button.data('address'),
+        type_pk: button.data('type'),
+        city_pk: button.data('city'),
+      });
+
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#update-agent-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      $('#update-agent-button').click(function(e) {
+        var data = $('form').serializeObject();
+        data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+        $.ajax({
+          url: "{% url 'api-agent-update' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+
+      // set dropdown to rendered template
+      $('.dropdown').dropdown();
+    }
+
+    // DELETE AGENT
+    if (button.data('action') === 'delete') {
+      // set up modal template and pass agent pk
+      var templateFunc = _.template($('#delete-agent-modal-template').html());
+      var modalTemplate = templateFunc({ pk: button.data('pk') });
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#delete-agent-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      // write content to modal
+      var content = "Apakah Anda yakin ingin menghapus agen <b>" + button.data('name') + "</b>?";
+      $('.delete-content').append(content);
+
+      $('#delete-agent-button').click(function(e) {
+        var data = {
+          csrfmiddlewaretoken: Cookies.get('csrftoken'),
+          pk: $(e.target).data('pk')
+        }
+
+        $.ajax({
+          url: "{% url 'api-agent-delete' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+    }
+  });
+
+  // show create agent modal
+  $('#create-agent-modal-btn').click(function() {
+    var templateFunc = _.template($('#create-agent-modal-template').html());
+    var modalTemplate = templateFunc();
+
+    $('#modal-container').append(modalTemplate);
+
+    $('#create-agent-modal')
+      .modal({
+        onHidden: function() { $('.ui.dimmer').empty(); }
+      }).modal('show');
+
+    // set dropdown to rendered template
+    $('.dropdown').dropdown();
+
+    // CREATE AGENT
+    $('#create-agent-button').click(function(e) {
+      e.preventDefault();
+
+      $('#create-agent-form').addClass('loading');
+
+      var data = $('form').serializeObject();
+      data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+      $.ajax({
+        url: "{% url 'api-agent-create' %}",
+        method: 'POST',
+        data: data,
+      }).done(function(response) {
+        $('#create-agent-form').removeClass('loading');
+        window.location.reload();
+      });
+    });
+  });
+</script>
+{% endblock %}

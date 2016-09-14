@@ -22,7 +22,7 @@ class DashboardView(StaffView):
 class TariffManagementView(StaffView):
     def get(self, request):
         context = { 'dashboard_active': 'active' }
-        return render(request, 'core/tariff.html', context)
+        return render(request, 'core/tariff-management.html', context)
 
 
 class AgentManagementView(StaffView):
