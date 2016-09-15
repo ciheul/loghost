@@ -46,8 +46,8 @@ class TariffView(AgentView):
 
 class ReportView(AgentView):
     def get(self, request):
-        context = { 'report_active': 'active' }
-        return render(request, 'agent/report.html', context)
+        context = { 'report_active': 'active', 'site': request.user.site }
+        return render(request, 'agent/inventory.html', context)
 
 
 class ProfileView(AgentView):

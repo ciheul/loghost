@@ -48,4 +48,7 @@ urlpatterns = [
     # ITEM
     url(r'^api/item/create/$', api.ItemCreateApi.as_view(), name='api-item-create'),
     url(r'^api/item/track/$', api.ItemTrackApi.as_view(), name='api-item-track'),
+
+    url(r'^api/item/site/(?P<site_pk>\d+)/$', api.ItemSiteApi.as_view(),
+        name='api-item-site'),
 ]

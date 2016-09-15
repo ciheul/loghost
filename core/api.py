@@ -3,12 +3,13 @@ from django.core.urlresolvers import reverse, reverse_lazy
 from django.db import DatabaseError
 from django.db.models import Q
 from django.http import HttpResponse
+from django.utils import timezone
 from django.views.generic import View
 
 import simplejson as json
 
 from account.models import CustomUser
-from core.models import History, Item, Site, Tariff
+from core.models import History, Item, ItemSite, ItemStatus, Site, Tariff
 from core.logics import generate_awb
 
 
@@ -551,6 +552,24 @@ class ItemCreateApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
 
+        status_to_be_collected = ItemStatus.objects.get(
+            name__iexact='TO BE COLLECTED')
+        try:
+            #insert to item_site
+            item_site = ItemSite(item=item,
+                                 site=request.user.site,
+                                 received_at=timezone.now(),
+                                 received_by=request.user.fullname,
+                                 item_status=status_to_be_collected)
+            item_site.save()
+        except DatabaseError as e:
+            response = {
+                'success': -1,
+                'message': "Fail to create ItemSite",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
         try:
             status = "SHIPMENT RECEIVED BY COUNTER [%s]" \
                 % (request.user.site.city.name.upper()) 
@@ -610,6 +629,32 @@ class ItemTrackApi(View):
             'sender_address': item.sender_address,
             'sender_zip_code': item.sender_zip_code,
             'data': data
+        }
+        return HttpResponse(json.dumps(response),
+                            content_type='application/json') 
+
+
+class ItemSiteApi(View):
+    def get(self, request, site_pk):
+        data = list()
+        item_sites = ItemSite.objects.filter(site_id=site_pk)
+        for item_site in item_sites:
+            d = {
+                'received_at':
+                    item_site.received_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'awb': item_site.item.awb,
+                'rack_id': item_site.rack_id,
+                'sender': item_site.item.sender_name,
+                'origin': item_site.item.sender_city.name,
+                'destination': item_site.item.receiver_city.name,
+                'service': item_site.item.tariff.service.name,
+                'status': item_site.item_status.name,
+            }
+            data.append(d)
+
+        response = {
+            'success': 0,
+            'data': data,
         }
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
