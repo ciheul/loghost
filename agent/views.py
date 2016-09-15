@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from core.models import City
+from core.models import City, GoodType, PaymentType, Service
 
 
 class AgentView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -19,7 +19,13 @@ class DashboardView(AgentView):
 
 class FillView(AgentView):
     def get(self, request):
-        context = { 'fill_active': 'active' }
+        context = {
+            'fill_active': 'active',
+            'cities': City.objects.all().order_by('name'),
+            'good_types': GoodType.objects.all(),
+            'payment_types': PaymentType.objects.all(),
+            'services': Service.objects.all(),
+        }
         return render(request, 'agent/fill.html', context)
 
 

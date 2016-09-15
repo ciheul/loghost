@@ -93,7 +93,7 @@
 <div class="ui negative message" style="margin-top:6em">
   <i class="close icon"></i>
   <div class="header"><%= message %></div>
-</p></div>
+</div>
 </script>
 {% endblock %}
 
@@ -129,11 +129,6 @@
         $('#tariff-container').append(tableTemplate);
 
         var rowTemplateFunc = _.template($('#tariff-item-template').html());
-        {# var rows = [ #}
-        {#   { name: 'EXPRESS', type: 'Parcel', price: '18.000', duration: '1-2'}, #}
-        {#   { name: 'EXPRESS15', type: 'Parcel', price: '20.000', duration: '1-2'}, #}
-        {# ]; #}
-
         response.data.forEach(function(row) {
           $('#tariff-list').append(rowTemplateFunc(row))
         });

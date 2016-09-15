@@ -30,24 +30,24 @@
     <tbody>
       <tr>
         <td>Perusahaan</td>
-        <td>CV. Linggo Kurir Perkasa</td>
+        <td>{{ request.user.site.name }}</td>
       </tr>
       <tr>
         <td>Alamat</td>
-        <td>Jalan Gatot Subroto, No. 2</td>
+        <td>{{ request.user.site.address }}</td>
       </tr>
       <tr>
         <td>Kota</td>
-        <td>Jakarta</td>
+        <td>{{ request.user.site.city.name }}</td>
       </tr>
       <tr>
         <td>Tipe</td>
-        <td>Sub Agen</td>
+        <td>{{ request.user.site.type.name }}</td>
       </tr>
-      <tr>
-        <td>Beroperasi</td>
-        <td>Mei 2014</td>
-      </tr>
+      {# <tr> #}
+      {#   <td>Beroperasi</td> #}
+      {#   <td>Mei 2014</td> #}
+      {# </tr> #}
     </tbody>
   </table>
 {% endblock %}

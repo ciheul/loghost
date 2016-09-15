@@ -66,6 +66,3 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     # def create_user(self):
     def get_short_name(self):
         return self.fullname
-
-
-# class CustomUserManager(BaseUserManager):

@@ -38,10 +38,14 @@ urlpatterns = [
     # USER
     url(r'^api/user/$', api.UserReadApi.as_view(),
         name='api-user-read'),
-    url(r'^api/user/create$', api.UserCreateApi.as_view(),
+    url(r'^api/user/create/$', api.UserCreateApi.as_view(),
         name='api-user-create'),
-    url(r'^api/user/update$', api.UserUpdateApi.as_view(),
+    url(r'^api/user/update/$', api.UserUpdateApi.as_view(),
         name='api-user-update'),
-    url(r'^api/user/delete$', api.UserDeleteApi.as_view(),
+    url(r'^api/user/delete/$', api.UserDeleteApi.as_view(),
         name='api-user-delete'),
+
+    # ITEM
+    url(r'^api/item/create/$', api.ItemCreateApi.as_view(), name='api-item-create'),
+    url(r'^api/item/track/$', api.ItemTrackApi.as_view(), name='api-item-track'),
 ]

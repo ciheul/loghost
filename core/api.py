@@ -8,7 +8,8 @@ from django.views.generic import View
 import simplejson as json
 
 from account.models import CustomUser
-from core.models import Site, Tariff
+from core.models import History, Item, Site, Tariff
+from core.logics import generate_awb
 
 
 class TariffCreateApi(View):
@@ -136,6 +137,91 @@ class TariffDeleteApi(View):
                             content_type='application/json') 
 
 
+class TariffCheckApi(View):
+    DIVIDER = 6000.0
+
+    def get(self, request):
+        if not request.GET['origin'] or not request.GET['destination']:
+            response = {
+                'success': -1,
+                'message': "Parameters are not complete",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
+        # container to hold two kind of weights
+        # normal weights and volumetric
+        weights = list()
+
+        # normal weights and calculated progressively
+        if request.GET['weight']:
+            weight = float(request.GET['weight'])
+            if 0 < weight < 1:
+                weight = 1
+            weights.append(round(weight))
+
+        if request.GET['length'] \
+                and request.GET['width'] \
+                and request.GET['height']:
+            volume = float(request.GET['length']) \
+                * float(request.GET['width']) \
+                * float(request.GET['height'])
+
+            weights.append(round(volume / self.DIVIDER))
+
+        if len(weights) < 1: 
+            response = {
+                'success': -1,
+                'message': "Parameters are not complete",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
+        # handling no route
+        try:
+            tariffs = Tariff.objects.filter(
+                origin_id=request.GET['origin'],
+                destination_id=request.GET['destination'])
+
+            if len(tariffs) == 0:
+                raise Tariff.DoesNotExist
+        except Tariff.DoesNotExist:
+            response = {
+                'success': -1,
+                'message': "No route",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
+        final_weight = max(weights)
+
+        # TODO handling route
+        data = list()
+        for tariff in tariffs:
+            d = {
+                'origin': tariff.origin.name,
+                'destination': tariff.destination.name,
+                'service': tariff.service.name,
+                'price': tariff.price * final_weight,
+                'duration': tariff.duration,
+            }
+            data.append(d)
+
+        response = {
+            'success': 0,
+            'weight': final_weight,
+            'data': data
+            # 'data': [
+            #     { 'name': 'EXPRESS', 'type': 'Parcel', 'price': '18.000',
+            #       'duration': '1-2'},
+            #     { 'name': 'EXPRESS15', 'type': 'Parcel', 'price': '20.000',
+            #       'duration': '1-2'},
+            # ]
+        }
+        return HttpResponse(json.dumps(response),
+                            content_type='application/json') 
+
+
 class AgentCreateApi(View):
     def post(self, request):
         # form validation
@@ -172,8 +258,6 @@ class AgentCreateApi(View):
 
 class AgentReadApi(View):
     def get(self, request):
-        # print request.GET
-
         # TODO use paging
         sites = Site.objects.filter(
             Q(type__name='Agen') | Q(type__name='Sub Agen'))
@@ -264,7 +348,6 @@ class AgentDeleteApi(View):
 
 class UserCreateApi(View):
     def post(self, request):
-        print request.POST
         # form validation
         if not request.POST['name'] \
                 or not request.POST['site_pk'] \
@@ -381,11 +464,19 @@ class UserDeleteApi(View):
                             content_type='application/json') 
 
 
-class TariffCheckApi(View):
-    DIVIDER = 6000.0
-
-    def get(self, request):
-        if not request.GET['origin'] or not request.GET['destination']:
+class ItemCreateApi(View):
+    def post(self, request):
+        if not request.POST['sender_name'] \
+                or not request.POST['sender_address'] \
+                or not request.POST['sender_city'] \
+                or not request.POST['receiver_name'] \
+                or not request.POST['receiver_address'] \
+                or not request.POST['receiver_city'] \
+                or not request.POST['service'] \
+                or not request.POST['good_type'] \
+                or not request.POST['payment_type'] \
+                or not request.POST['good_name'] \
+                or not request.POST['price']:
             response = {
                 'success': -1,
                 'message': "Parameters are not complete",
@@ -393,74 +484,134 @@ class TariffCheckApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
 
-        # container to hold two kind of weights
-        # normal weights and volumetric
-        weights = list()
+        # normalize
+        weight = request.POST['weight']
+        length = request.POST['length']
+        width = request.POST['width']
+        height = request.POST['height']
+        good_value = request.POST['good_value']
+        sender_zip_code = request.POST['sender_zip_code']
+        receiver_zip_code = request.POST['receiver_zip_code']
 
-        # normal weights and calculated progressively
-        if request.GET['weight']:
-            weight = float(request.GET['weight'])
-            if 0 < weight < 1:
-                weight = 1
-            weights.append(round(weight))
+        if weight == '': weight = 0.0
+        if length == '': length = 0.0
+        if width == '': width = 0.0
+        if height == '': height = 0.0
+        if good_value == '': good_value = 0
+        if sender_zip_code == '': sender_zip_code = None
+        if receiver_zip_code == '': receiver_zip_code = None
 
-        if request.GET['length'] \
-                and request.GET['width'] \
-                and request.GET['height']:
-            volume = float(request.GET['length']) \
-                * float(request.GET['width']) \
-                * float(request.GET['height'])
-
-            weights.append(round(volume / self.DIVIDER))
-
-        if len(weights) < 1: 
-            response = {
-                'success': -1,
-                'message': "Parameters are not complete",
-            }
-            return HttpResponse(json.dumps(response),
-                                content_type='application/json') 
-
-        # handling no route
         try:
-            tariffs = Tariff.objects.filter(
-                origin_id=request.GET['origin'],
-                destination_id=request.GET['destination'])
-
-            if len(tariffs) == 0:
-                raise Tariff.DoesNotExist
+            tariff = Tariff.objects.get(
+                origin_id=int(request.POST['sender_city']),
+                destination_id=int(request.POST['receiver_city']),
+                service_id=int(request.POST['service']))
         except Tariff.DoesNotExist:
             response = {
                 'success': -1,
-                'message': "No route",
+                'message': "No route. Ensure tariff is available",
             }
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
 
-        final_weight = max(weights)
+        awb = generate_awb()
 
-        # TODO handling route
+        # TODO error handling when site already exists
+        # write to database
+        try:
+            item = Item(user=request.user,
+                        awb=awb,
+                        sender_name=request.POST['sender_name'],
+                        sender_address=request.POST['sender_address'],
+                        sender_city_id=int(request.POST['sender_city']),
+                        sender_zip_code=sender_zip_code,
+                        sender_phone=request.POST['sender_phone'],
+                        receiver_name=request.POST['receiver_name'],
+                        receiver_address=request.POST['receiver_address'],
+                        receiver_city_id=int(request.POST['receiver_city']),
+                        receiver_zip_code=receiver_zip_code,
+                        receiver_phone=request.POST['receiver_phone'],
+                        payment_type_id=int(request.POST['payment_type']),
+                        good_name=request.POST['good_name'],
+                        good_value=int(good_value),
+                        good_type_id=int(request.POST['good_type']),
+                        quantity=1,
+                        weight=round(float(weight)),
+                        length=float(length),
+                        width=float(width),
+                        height=float(height),
+                        price=int(request.POST['price']),
+                        information=request.POST['note'],
+                        instruction=request.POST['instruction'],
+                        tariff=tariff)
+            item.save()
+        except DatabaseError as e:
+            response = {
+                'success': -1,
+                'message': "Fail to create Item",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
+        try:
+            status = "SHIPMENT RECEIVED BY COUNTER [%s]" \
+                % (request.user.site.city.name.upper()) 
+            history = History(item=item, status=status)
+            history.save()
+        except DatabaseError:
+            response = {
+                'success': -1,
+                'message': "Fail to create Item History",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
+        response = { 'success': 0, 'awb': awb }
+        return HttpResponse(json.dumps(response),
+                            content_type='application/json') 
+
+
+class ItemTrackApi(View):
+    def get(self, request):
+        if not request.GET['awb']:
+            response = {
+                'success': -1,
+                'message': "Parameters are not complete",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
+        try:
+            item = Item.objects.get(awb=request.GET['awb'])
+            statuses = History.objects.filter(item=item).order_by('created_at')
+        except History.DoesNotExist:
+            response = {
+                'success': -1,
+                'message': "AWB does not exist in database",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
         data = list()
-        for tariff in tariffs:
+        for status in statuses:
             d = {
-                'origin': tariff.origin.name,
-                'destination': tariff.destination.name,
-                'service': tariff.service.name,
-                'price': tariff.price * final_weight,
-                'duration': tariff.duration,
+                'time': status.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'status': status.status,
             }
             data.append(d)
 
         response = {
             'success': 0,
-            'weight': final_weight,
+            'awb': item.awb,
+            'service': item.tariff.service.name,
+            'created_at': item.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'sender_city_name': item.sender_city.name,
+            'receiver_city_name': item.receiver_city.name,
+            'good_type': item.good_type.name,
+            'sender_name': item.sender_name,
+            'sender_address': item.sender_address,
+            'sender_zip_code': item.sender_zip_code,
             'data': data
-            # 'data': [
-            #     { 'name': 'EXPRESS', 'type': 'Parcel', 'price': '18.000',
-            #       'duration': '1-2'},
-            #     { 'name': 'EXPRESS15', 'type': 'Parcel', 'price': '20.000',
-            #       'duration': '1-2'},
-            # ]
         }
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 

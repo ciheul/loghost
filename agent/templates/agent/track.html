@@ -7,14 +7,18 @@
 
     <div class="inline fields">
       <div class="six wide field">
-        <input type="text" name="awb" placeholder="Air Waybill (AWB)" value="800123456789">
+        <input type="text" name="awb" placeholder="Air Waybill (AWB)">
       </div>
       <div class="field">
-        <div class="ui primary right floated button" tabindex="0">Track</div>
+        <div class="ui primary right floated button track-btn" tabindex="0">Track</div>
       </div>
     </div>
   </form>
 
+  <div id="track-detail"></div>
+</div>
+
+<script type="text/template" id="track-detail-template">
   <h3 class="ui dividing header" style="margin-top:3em">Tracking Detail</h3>
   <table class="ui celled table">
     <thead>
@@ -28,11 +32,11 @@
     </thead>
     <tbody>
       <tr>
-        <td>800123456789</td>
-        <td>EXPRESS20</td>
-        <td>2016-09-09 12:43</td>
-        <td>Jakarta</td>
-        <td>Tangerang</td>
+        <td><%= awb %></td>
+        <td><%= service %></td>
+        <td><%= created_at %></td>
+        <td><%= sender_city_name %></td>
+        <td><%= receiver_city_name %></td>
       </tr>
     </tbody>
   </table>
@@ -48,10 +52,10 @@
     </thead>
     <tbody>
       <tr>
-        <td>Surat</td>
-        <td>Indra Hermanto</td>
-        <td>Jalan Dukuh Atas No. 9, Kebon Sirih</td>
-        <td>10340</td>
+        <td><%= good_type %></td>
+        <td><%= sender_name %></td>
+        <td><%= sender_address %></td>
+        <td><%= sender_zip_code%></td>
       </tr>
     </tbody>
   </table>
@@ -59,33 +63,76 @@
   <table class="ui celled table">
     <thead>
       <tr>
-        <th>Waktu</th>
-        <th>Tempat</th>
+        <th>Time</th>
         <th>Status</th>
       </tr>
     </thead>
-    <tbody>
-      <tr>
-        <td>2016-09-09 12:43</td>
-        <td>Jakarta</td>
-        <td>Paket diterima oleh petugas JNE</td>
-      </tr>
-      <tr>
-        <td>2016-09-09 21:11</td>
-        <td>Jakarta</td>
-        <td>Diterima di Gateway</td>
-      </tr>
-      <tr>
-        <td>2016-09-10 09:01</td>
-        <td>Jakarta</td>
-        <td>Diproses di Gateway</td>
-      </tr>
-      <tr>
-        <td>2016-09-11 08:27</td>
-        <td>Tangerang</td>
-        <td>Diterima di Warehouse</td>
-      </tr>
-    </tbody>
+    <tbody id="track-list"></tbody>
   </table>
+</script>
+
+<script type="text/template" id="track-item-template">
+      <tr>
+        <td><%= time %></td>
+        <td><%= status %></td>
+      </tr>
+</script>
+
+<script type="text/template" id="track-error-template">
+<div class="ui negative message" style="margin-top:3em">
+  <i class="close icon"></i>
+  <div class="header"><%= message %></div>
 </div>
+</script>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  $('.track-btn').click(function(e) {
+    var awb = $('input[name=awb]').val();
+    $.ajax({
+      url: "{% url 'api-item-track' %}",
+      method: 'GET',
+      data: { awb: awb },
+    }).done(function(response) {
+      console.log(response);
+
+      $('#track-detail').empty()
+
+      if (response.success === -1) {
+        var messageTemplateFunc = _.template($('#track-error-template').html());
+        var messageTemplate = messageTemplateFunc({ message: response.message });
+        $('#track-detail').append(messageTemplate);
+
+        $('.message .close').on('click', function() {
+          $(this).closest('.message').transition('fade');
+        });
+        return;
+      }
+      render(response);
+    });
+  });
+
+  function render(response) {
+    var templateFunc = _.template($('#track-detail-template').html());
+    var trackTemplate = templateFunc({
+      awb: response.awb,
+      service: response.service,
+      created_at: response.created_at,
+      sender_city_name: response.sender_city_name,
+      receiver_city_name: response.receiver_city_name,
+      good_type: response.good_type,
+      sender_name: response.sender_name,
+      sender_address: response.sender_address,
+      sender_zip_code: response.sender_zip_code,
+    });
+
+    $('#track-detail').append(trackTemplate);
+
+    var rowTemplateFunc = _.template($('#track-item-template').html());
+    response.data.forEach(function(row) {
+      $('#track-list').append(rowTemplateFunc(row))
+    });
+  }
+</script>
 {% endblock %}
