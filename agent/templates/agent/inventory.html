@@ -4,8 +4,6 @@
 <div class="ui main container" style="margin-top:6em;margin-bottom:6em">
   <h1 class="ui header" style="margin-bottom:1em">Inventory</h1>
 
-  <div class="ui small primary button" id="create-tariff-modal-btn">Create Tariff</div>
-
   <table id="report" class="ui celled table">
     <thead>
       <tr>
@@ -19,6 +17,7 @@
         {# <th>Good Type</th> #}
         {# <th>Price (IDR)</th> #}
         <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
   </table>
@@ -65,7 +64,17 @@
       {# { data: 'good_type', className: 'dt-left' }, #}
       {# { data: 'price', className: 'dt-left' }, #}
       { data: 'status', className: 'dt-left' },
+      { data: 'action', className: 'dt-left' },
     ],
+    columnDefs: [
+      {
+        targets: -1,
+        render: function(data, type, row, meta) {
+          return ''
+            + '<div class="mini ui primary button">Print</div>';
+        }
+      }
+    ]
   });
 
 </script>
