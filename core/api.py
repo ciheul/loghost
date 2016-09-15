@@ -1,6 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from django.core.urlresolvers import reverse, reverse_lazy
-from django.db import DatabaseError
+from django.db import DatabaseError, transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
@@ -9,7 +9,8 @@ from django.views.generic import View
 import simplejson as json
 
 from account.models import CustomUser
-from core.models import History, Item, ItemSite, ItemStatus, Site, Tariff
+from core.models import History, Item, ItemSite, ItemStatus, Site, Tariff, \
+                        Shipment, ItemShipment
 from core.logics import generate_awb
 
 
@@ -658,3 +659,247 @@ class ItemSiteApi(View):
         }
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
+
+# required user_id, awb
+class OutboundApi(View):
+    
+    @transaction.atomic
+    def post(self, request):
+        if not request.POST['user_id'] \
+                or not request.POST['awb']:
+                    response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+                    return HttpResponse(json.dumps(response),
+                                        content_type='application/json')
+        # retrieve location
+        user = CustomUser.objects.get(pk=request.POST['user_id'])
+        location = Site.objects.get(pk=user.site.id)
+        collected_status = ItemStatus.objects.get(name__iexact='COLLECTED')
+        shipping_status = ItemStatus.objects.get(name__iexact='ON SHIPPING')
+
+        item = Item.objects.get(awb__iexact=request.POST['awb'])
+
+        # update item_shipment
+        item_shipment = ItemShipment.objects.get(item_id=item.id)
+        item_shipment.item_shipment_status_id=shipping_status.id
+        item_shipment.save()
+
+
+        # update item_site
+        item_site = ItemSite.objects.get(item_id=item.id)
+        item_site.item_status_id = collected_status.id
+        item_site.updated_at = timezone.now()
+        item_site.save()
+
+       
+        #insert to History
+        history = History(
+                    item_id=item.id,
+                    status=shipping_status.name)
+
+        history.save()
+
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                                        content_type='application/json')
+
+
+
+# required user_id, awb, rack_id
+class InboundApi(View):
+    
+    @transaction.atomic
+    def post(self, request):
+        if not request.POST['user_id'] \
+                or not request.POST['awb']:
+                    response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+                    return HttpResponse(json.dumps(response),
+                                        content_type='application/json')
+        # retrieve location
+        user = CustomUser.objects.get(pk=request.POST['user_id'])
+        location = Site.objects.get(pk=user.site.id)
+        shipped_status = ItemStatus.objects.get(name__iexact='SHIPPED')
+
+        item = Item.objects.get(awb__iexact=request.POST['awb'])
+        
+        item_site_status = ItemStatus.objects.get(name__iexact='ON TRANSIT')
+        
+        #if location.city.id == item.sender_city.id:
+        #    item_site_status = ItemStatus.objects.get(name__iexact='MANIFESTED')
+        #if location.city.id == item.receiver_city.id:
+        #    item_site_status = ItemStatus.objects.get(name__iexact='RECEIVED ON DESTINATION')
+
+        # update item_shipment
+        item_shipment = ItemShipment.objects.get(item_id=item.id)
+        item_shipment.item_shipment_status_id=shipped_status.id
+        item_shipment.save()
+
+
+        # insert item_site
+        item_site = ItemSite(
+                        item_id=item.id,
+                        site_id=user.site.id,
+                        rack_id=request.POST['rack_id'],
+                        received_at=timezone.now(),
+                        received_by=user.fullname
+                    )
+                        
+
+        item_site.item_storage_status_id=item_site_status.id
+        item_site.save()
+
+
+
+       
+        #insert to History
+        history = History(
+                    item_id=item.id,
+                    status=shipped_status.name)
+
+        history.save()
+
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                                        content_type='application/json')
+
+
+class InsertItemApi(View):
+
+    @transaction.atomic
+    def post(self, request):
+
+        # retrieve location
+        user = CustomUser.objects.get(pk=request.POST['user_id'])
+        location = Site.objects.get(pk=user.site_id)
+        # TODO still hardcode
+        status_to_be_collected = ItemStatus.objects.get(name__iexact='TO BE COLLECTED')
+        
+        #create item
+        item = Item(
+                user_id=user.id,
+                awb=self.generate_awb(location.id),
+                sender_name=request.POST['sender_name'],
+                sender_address=request.POST['sender_address'],
+                sender_zip_code=request.POST['sender_zip_code'],
+                receiver_name=request.POST['receiver_name'],
+                receiver_address=request.POST['receiver_address'],
+                receiver_zip_code=request.POST['receiver_zip_code'],
+                good_name=request.POST['good_name'])
+
+        item.sender_city_id=int(request.POST['sender_city_id']),
+        item.receiver_city_id=int(request.POST['receiver_city_id']),
+        item.status_id=status_to_be_collected.id
+        item.save()
+
+        #insert to item_site
+        item_site = ItemSite(
+                        item_id=item.id,
+                        site_id=location.id,
+                        rack_id= request.POST['rack_id'],
+                        received_at=timezone.now(),
+                        received_by=user.fullname)
+                        
+
+        item_site.item_storage_status_id=status_to_be_collected.id
+        item_site.save()
+
+        #insert to History
+        history = History(
+                    item_id=item.id,
+                    status=status_to_be_collected.name)
+
+        history.save()
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                                        content_type='application/json')
+
+    def generate_random(self):
+        number = ''
+        for i in range(8):
+            number += random.choice(string.digits)
+        return number
+
+    def generate_awb(self, site_id):
+        return 'LOGH' + str(site_id).zfill(4) + self.generate_random()
+
+
+# required params: user_id, transportation_id, cost
+class RunsheetApi(View):
+
+    @transaction.atomic
+    def post(self, request):
+        staff = CustomUser.objects.get(pk=request.POST['user_id'])
+
+        # TODO still hardcode
+        status_to_be_collected = ItemStatus.objects.get(name__iexact='TO BE COLLECTED')
+        
+        
+        print 'city id : ' + str(staff.site.city_id)
+        # retrieve same city agent
+        agent_qs = Site.objects.filter(Q(city_id=staff.site.city_id) &
+                        (Q(type__name='Agen') | Q(type__name='Sub Agen')))
+         
+        
+        agent_sites = []
+        for agent in agent_qs.iterator():
+            agent_sites.append(agent.id)
+
+
+        # collect items
+        item_to_collect = ItemSite.objects.filter(
+                Q(item_status_id=status_to_be_collected.id) &
+                Q(site_id=agent.id))
+        
+        if not item_to_collect.exists():
+            response = {
+                'success': -1,
+                'message': 'No item to collect'
+                
+            }
+            return HttpResponse(json.dumps(response),
+                                        content_type='application/json')
+
+        # TODO need mechanism to check whether runsheet has been generated 
+        #       to avoid staff to generate DOUBLE runsheet
+
+        # generate runsheet
+        runsheet = Shipment(
+                    cost=request.POST['cost'],
+                    transportation_id=request.POST['transportation_id'])
+
+        runsheet.origin_site = staff.site
+
+        runsheet.destination_site = staff.site
+        runsheet.save()
+        
+        # TODO mechanism to generate bag id
+        bag_id = 'BAG0001'
+
+        # insert item_shipment
+        for item_site in item_to_collect.iterator():
+            ItemShipment.objects.create(
+                    item_id=item_site.item_id,
+                    shipment=runsheet,
+                    bag_id=bag_id,
+                    item_shipment_status=status_to_be_collected)
+
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                                        content_type='application/json')
