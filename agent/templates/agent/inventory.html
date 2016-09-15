@@ -71,11 +71,23 @@
         targets: -1,
         render: function(data, type, row, meta) {
           return ''
-            + '<div class="mini ui primary button">Print</div>';
+            + "<form target='_blank' method='post'>"
+            {# + '"' + {% csrf_token %} + '"' #}
+            + "  <input type='hidden' name='csrfmiddlewaretoken' value='" + Cookies.get('csrftoken')+ "'>" 
+            + "  <input type='hidden' name='pk' value='" + row.action + "'>" 
+            + "  <button class='mini ui primary button print-btn'>Print</button>"
+            + "</form>";
         }
       }
     ]
   });
+
+{# $('#report tbody').click('button', function(e) { #}
+{#   console.log('print'); #}
+{#   console.log($(e.target).data('pk')); #}
+{#   var form = $(e.target); #}
+{#   form.submit(); #}
+{# }); #}
 
 </script>
 {% endblock %}
