@@ -352,7 +352,6 @@ class UserCreateApi(View):
         if not request.POST['name'] \
                 or not request.POST['site_pk'] \
                 or not request.POST['email'] \
-                or not request.POST['username'] \
                 or not request.POST['password'] \
                 or not request.POST['confirm']:
             response = {
@@ -367,7 +366,6 @@ class UserCreateApi(View):
         try:
             s = CustomUser(fullname=request.POST['name'],
                            site_id=int(request.POST['site_pk']),
-                           username=request.POST['username'],
                            email=request.POST['email'],
                            password=make_password(request.POST['password']))
             s.save()
