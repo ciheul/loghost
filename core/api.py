@@ -656,6 +656,7 @@ class ItemSiteApi(View):
                 'destination': item_site.item.receiver_city.name,
                 'service': item_site.item.tariff.service.name,
                 'status': item_site.item_status.name,
+                'action': item_site.item.pk,
             }
             data.append(d)
 

@@ -4,6 +4,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from core.models import City, GoodType, PaymentType, Service
+from report.agent import AgentReport
 
 
 class AgentView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -48,6 +49,11 @@ class ReportView(AgentView):
     def get(self, request):
         context = { 'report_active': 'active', 'site': request.user.site }
         return render(request, 'agent/inventory.html', context)
+
+    def post(self, request):
+        report = AgentReport()
+        response = report.print_awb(request)
+        return response
 
 
 class ProfileView(AgentView):
