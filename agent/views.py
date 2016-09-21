@@ -56,6 +56,17 @@ class ReportView(AgentView):
         return response
 
 
+class ShipmentView(AgentView):
+    # def get(self, request):
+    #     context = { 'shipment_active': 'active' }
+    #     return render(request, 'agent/inventory.html', context)
+
+    def post(self, request):
+        report = AgentReport()
+        response = report.print_shipment_marking(request)
+        return response
+
+
 class ProfileView(AgentView):
     def get(self, request):
         context = { 'profile_active': 'active' }

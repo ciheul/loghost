@@ -15,15 +15,30 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4, landscape, LEGAL
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
+from reportlab.lib.units import cm, mm, inch
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
-from reportlab.platypus import Image, SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import Frame, Image, SimpleDocTemplate, Table, TableStyle
 from reportlab.platypus.flowables import Image, Spacer
 from reportlab.platypus.paragraph import Paragraph
 
 
 class AgentReport:
+    def __init__(self):
+        self.page_width, self.page_height = A4
+        self.n_style = ParagraphStyle(name='normal',
+                                      spaceAfter=50,
+                                      fontSize=6,
+                                      fontName='Helvetica')
+        self.sender_style = ParagraphStyle(name='sender',
+                                      fontSize=8,
+                                      fontName='Helvetica')
+        self.receiver_style = ParagraphStyle(name='receiver',
+                                      spaceAfter=10,
+                                      fontSize=16,
+                                      fontName='Helvetica-Bold')
+        self.styles = getSampleStyleSheet()
+
     def print_awb2(self, request):
         item = Item.objects.get(pk=request.POST['pk'])
 
@@ -264,6 +279,178 @@ class AgentReport:
 
         return response
 
+    def print_shipment_marking(self, request):
+        AWB_NUMBER = 12345
+        DESTINATION = 'BANYUWANGI'
+        SERVICE = 'EXPRESS'
+        PAYMENT_TYPE = 'PREPAID CASH'
+        PICKUP_AT = '2016/09/22 14:30'
+        GOOD_NAME = "Buku-Buku Pelajaran"
+        PCS = '2'
+        TOTAL = '4'
+        WEIGHT = "750 Kg"
+        VOL_WEIGHT = "1230 Kg"
+
+        sender = list()
+        sender.append(Paragraph('PT Matra Integra Intika', self.sender_style))
+        sender.append(Paragraph('Wisma Metropol, Lt 26', self.sender_style))
+        sender.append(Paragraph('Jl. Masjid Kav 31-32', self.sender_style))
+        sender.append(Paragraph('Jakarta, 12320', self.sender_style))
+        sender.append(Paragraph('Telp: 2334000', self.sender_style))
+        sender.append(Paragraph('Name: Andi Surya', self.sender_style))
+
+        receiver = list()
+        receiver.append(Paragraph('PT Bank Rakyat Indonesia', self.receiver_style))
+        receiver.append(Paragraph('Divisi Kredit Komersial', self.receiver_style))
+        receiver.append(Paragraph('Jl. Jendral Sudirman 71', self.receiver_style))
+        receiver.append(Paragraph('Banyuwangi, 56320', self.receiver_style))
+        receiver.append(Paragraph('Telp: 2523000', self.receiver_style))
+        receiver.append(Paragraph('Bp. Wahyu Tunggono', self.receiver_style))
+
+        shipper_reference = list()
+        content = "D/N 00021, D/N 00022, D/N 00023, D/N 00024, D/N 00025, D/N 00026, D/N 00027"
+        shipper_reference.append(Paragraph(content, self.sender_style))
+
+        # setting for sending back the PDF in response
+        filename = 'shipment-marking.pdf'
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'filename="%s"' % filename
+
+        # barcode_path = self.generate_barcode(AWB_NUMBER)
+
+        c = canvas.Canvas(response, pagesize=A4)
+
+        # from bottom left, move the origin (0, 0).
+        # 1 cm to the right and 1 cm to the top
+        # c.translate(cm, cm)
+
+        # rectangle
+        c.rect(1*cm, self.page_height/2, self.page_width - 2*cm, self.page_height/2 - 1*cm)
+
+        # no1 horizontal line
+        c.line(1*cm, 730, self.page_width - 1*cm, 730)
+
+        # no2 horizontal line
+        c.line(8*cm, 665, self.page_width - 1*cm, 665)
+
+        # no3 horizontal line
+        c.line(1*cm, 630, self.page_width - 1*cm, 630)
+
+        # no4 horizontal line
+        c.line(1*cm, 550, 8*cm, 550)
+
+        # no5 horizontal line
+        c.line(1*cm, 490, 8*cm, 490)
+
+        # no6 horizontal line
+        c.line(490, 560, self.page_width - 1*cm, 560)
+
+        # no7 horizontal line
+        c.line(490, 485, self.page_width - 1*cm, 485)
+
+        # no8 horizontal line
+        c.line(1*cm, 470, 490, 470)
+
+        # no9 horizontal line
+        c.line(490, 452, self.page_width - 1*cm, 452)
+
+        # no1 vertical line
+        c.line(2*cm, 550, 2*cm, 630)
+
+        # no2 vertical line
+        c.line(8*cm, self.page_height/2, 8*cm, 730)
+
+        # no3 vertical line
+        c.line(490, 630, 490, self.page_height/2)
+
+        # horizontal line in the center page
+        # c.line(0, self.page_height/2, self.page_width, self.page_height/2)
+
+        # insert Axes logo into flowables
+        img_path = os.path.join(settings.BASE_DIR,
+                                'static/loghost/images/area-51-logistik.png')
+        img_reader = ImageReader(img_path)
+        img_width, img_height = img_reader.getSize()
+
+        c.drawImage(img_path, 85, 427, width=img_width/2, height=img_height/2,
+                    mask='auto')
+
+        c.setFont('Helvetica', 8)
+        c.drawString(1.5*cm, 795, 'Destination :')
+
+        c.setFont('Helvetica-Bold', 48)
+        c.drawString(2*cm, 750, DESTINATION)
+
+        c.setFont('Helvetica-Bold', 40)
+        c.drawString(self.page_width/2, 685, SERVICE)
+
+        c.setFont('Helvetica', 8)
+        c.drawString(8.3*cm, 650, 'Account No:')
+
+        c.setFont('Helvetica-Bold', 20)
+        c.drawString(self.page_width/2 , 640, PAYMENT_TYPE)
+
+        c.setFont('Helvetica', 8)
+        c.drawString(35, 538, "Shipper Reference:")
+
+        c.setFont('Helvetica', 8)
+        c.drawString(35, 478, "Pick Up:")
+
+        c.setFont('Helvetica-Bold', 8)
+        c.drawString(90, 478, PICKUP_AT)
+
+        c.setFont('Helvetica', 8)
+        c.drawString(8.3*cm, 615, "Consignee:")
+
+        c.setFont('Helvetica', 8)
+        c.drawString(495, 615, "Pcs No:")
+
+        c.setFont('Helvetica-Bold', 48)
+        c.drawString(515, 575, PCS)
+
+        c.setFont('Helvetica', 8)
+        c.drawString(495, 545, "Of Total:")
+
+        c.setFont('Helvetica-Bold', 48)
+        c.drawString(515, 500, TOTAL)
+
+        c.setFont('Helvetica', 8)
+        c.drawString(495, 475, "Weight:")
+
+        c.setFont('Helvetica-Bold', 16)
+        c.drawString(500, 458, WEIGHT)
+
+        c.setFont('Helvetica', 8)
+        c.drawString(495, 443, "Vol. Weight:")
+
+        c.setFont('Helvetica-Bold', 16)
+        c.drawString(500, 428, VOL_WEIGHT)
+
+        c.setFont('Helvetica', 8)
+        c.drawString(8.3*cm, 455, "Isi:")
+
+        c.setFont('Helvetica-Bold', 12)
+        c.drawString(270, 440, GOOD_NAME)
+
+        f = Frame(2.5*cm, 542, 150, 90, showBoundary=0)
+        f.addFromList(sender, c)
+
+        f = Frame(235, 480, 245, 125, showBoundary=0)
+        f.addFromList(receiver, c)
+
+        f = Frame(30, 490, 190, 50, showBoundary=0)
+        f.addFromList(shipper_reference, c)
+
+        c.translate(45, 0)
+        c.rotate(90)
+        c.setFont('Helvetica', 12)
+        c.drawString(20*cm, 0, "Shipper:")
+        c.rotate(0)
+
+        c.showPage()
+        c.save()
+
+        return response
 
     def generate_barcode(self, awb):
         ean = barcode.get('ean13', awb, writer=ImageWriter())

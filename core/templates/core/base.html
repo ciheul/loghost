@@ -20,6 +20,7 @@
         <a class="{{ dashboard_active }} item" href="{% url 'core-dashboard' %}" style="color:white">Home</a>
         <a class="{{ tariff_active }} item" href="{% url 'core-tariff' %}" style="color:white">Tariff</a>
         <a class="{{ agent_active }} item" href="{% url 'core-agent' %}" style="color:white">Agent</a>
+        <a class="{{ transportation_active }} item" href="#" style="color:white">Transportation</a>
         <div class="right menu">
           <div class="ui dropdown item" style="color:white">
             {{ request.user.email }}<i class="dropdown icon"></i>
