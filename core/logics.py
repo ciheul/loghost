@@ -1,10 +1,10 @@
-from core.models import Awb
+from core.models import AwbCounter
 
 
 def generate_awb():
     PREFIX = '800'
 
-    a = Awb.objects.all()[0]
+    a = AwbCounter.objects.all()[0]
 
     # add left padding zeroes 
     serial_number = a.last_serial_number

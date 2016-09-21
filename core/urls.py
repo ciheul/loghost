@@ -14,6 +14,17 @@ urlpatterns = [
         views.UserManagementView.as_view(), name='core-user'),
 
     # API
+    url(r'^api/item/insert/$',api.InsertItemApi.as_view(), 
+        name='api-item-insert'),
+    url(r'^api/runsheet/$',api.RunsheetApi.as_view(), 
+        name='api-runsheet'),
+    url(r'^api/outbound/$',api.OutboundApi.as_view(), 
+        name='api-outbound'),
+    url(r'^api/inbound/$',api.InboundApi.as_view(), 
+        name='api-inbound'),
+    url(r'^api/bagging/$',api.BaggingApi.as_view(), 
+        name='api-bagging'),
+
 
     # TARIFF
     url(r'^api/tariff/$', api.TariffReadApi.as_view(), name='api-tariff-read'),

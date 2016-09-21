@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 
-class Awb(models.Model):
+class AwbCounter(models.Model):
     last_serial_number = models.IntegerField()
 
 
@@ -62,15 +62,23 @@ class GoodType(models.Model):
 
 
 class ItemStatus(models.Model):
+    code = models.CharField(max_length=2, null=True, blank=True)
     name = models.CharField(max_length=50, null=True, blank=True)
 
     def __unicode__(self):
         return self.name
 
+class AWB(models.Model):
+    number = models.CharField(max_length=30,unique=True)
+    status = models.ForeignKey('ItemStatus', null=True, blank=True)
+
+    def __unicode__(self):
+        return self.number
+
 
 class Item(models.Model):
-    user = models.ForeignKey('account.CustomUser')
-    awb = models.CharField(max_length=30, unique=True)
+    user = models.ForeignKey('account.CustomUser', null=True, blank=True)
+    awb = models.ForeignKey('AWB', null=True, blank=True)
     sender_name = models.CharField(max_length=50)
     sender_address = models.CharField(max_length=100)
     sender_city = models.ForeignKey(City, related_name='sender_city')
@@ -129,7 +137,7 @@ class ItemMetric(models.Model):
 
 
 class History(models.Model):
-    item = models.ForeignKey(Item)
+    awb = models.ForeignKey('AWB')
     status = models.CharField(max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -138,7 +146,7 @@ class History(models.Model):
 
 
 class ItemSite(models.Model):
-    item = models.ForeignKey('Item', null=True, blank=True)
+    awb = models.ForeignKey('AWB', null=True, blank=True)
     site = models.ForeignKey('Site', null=True, blank=True)
     rack_id = models.CharField(max_length=5, null=True, blank=True)
     received_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -151,7 +159,7 @@ class ItemSite(models.Model):
 
 
     def __unicode__(self):
-        return 'item %s - site %s' %(self.item, self.site)
+        return 'awb %s - site %s' %(self.awb, self.site)
 
 
 class Shipment(models.Model):
@@ -167,10 +175,12 @@ class Shipment(models.Model):
     destination = models.CharField(max_length=20, null=True, blank=True)
     destination_site= models.ForeignKey('Site', null=True, blank=True, 
                                     related_name='destination')
+    smu = models.CharField(max_length=15, null=True, blank=True)
     
 
     def __unicode__(self):
-        return 'transportaion %s' %(self.transportation)
+        return 'transportation %s' %(self.transportation)
+
 
 class Transportation(models.Model):
     identifier = models.CharField(max_length=20)
@@ -198,11 +208,61 @@ class TransportationType(models.Model):
 
 
 class ItemShipment(models.Model):
-    item = models.ForeignKey('Item', null=True, blank=True)
+    awb = models.ForeignKey('AWB', null=True, blank=True)
     shipment = models.ForeignKey('Shipment', null=True, blank=True)
-    bag_id = models.CharField(max_length=20, null=True, blank=True)
-    item_shipment_status_id = models.ForeignKey('ItemStatus', null=True, 
+    item_shipment_status = models.ForeignKey('ItemStatus', null=True, 
                                                 blank=True)
+    def __unicode__(self):
+        return 'item_id %s - shipment_id %s' %(self.awb, self.shipment_id)
+
+
+class ItemBagShipment(models.Model):
+    awb = models.ForeignKey('AWB', null=True, blank=True)
+    shipment = models.ForeignKey('Shipment', null=True, blank=True)
+    bag = models.ForeignKey('Bag', null=True, blank=True)
 
     def __unicode__(self):
-        return 'item_id %s - shipment_id %s' %(self.item_id, self.shipment_id)
+        return 'bag_id %s - shipment_id %s' %(self.bag_id, self.shipment_id)
+
+
+class Bag(models.Model):
+    number = models.CharField(max_length=30)
+
+    def __unicode__(self):
+        return self.number
+
+
+class BagItem(models.Model):
+    bag = models.ForeignKey('Bag', null=True, blank=True)
+    awb = models.ForeignKey('AWB', null=True, blank=True)
+
+
+class Courier(models.Model):
+    name = models.CharField(max_length=30)
+    phone = models.CharField(max_length=20)
+    transportation_type = models.ForeignKey('TransportationType')
+    
+    def __unicode__(self):
+        return self.name
+
+
+class Delivery(models.Model):
+    awb = models.ForeignKey('AWB')
+    courier = models.ForeignKey('Courier')
+    forwarder = models.ForeignKey('Forwarder')
+    status = models.ForeignKey('ItemStatus', null=True, blank=True)
+    receiver_name = models.CharField(max_length=30, null=True, blank=True)
+    receive_date = models.DateTimeField(null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+
+class Forwarder(models.Model):
+    name = models.CharField(max_length=20)
+    code = models.CharField(max_length=5)
+    address = models.CharField(max_length=50)
+    phone = models.CharField(max_length=12)
+
+    def __unicode__(self):
+        return self.name
+

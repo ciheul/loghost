@@ -10,7 +10,7 @@ import simplejson as json
 
 from account.models import CustomUser
 from core.models import History, Item, ItemSite, ItemStatus, Site, Tariff, \
-                        Shipment, ItemShipment
+                        Shipment, ItemShipment, AWB, Bag, BagItem
 from core.logics import generate_awb
 
 import traceback, random, string
@@ -751,12 +751,145 @@ class OutboundApi(View):
 
 
 
+class ItemOnProcess(View):
+    def post(self, request):
+        if not request.POST['user_id'] \
+            or not request.POST['awb'] :
+                response = {
+                    'success': -1,
+                    'message': "Parameters are not complete",
+                }
+                return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        try:
+            on_process_status = ItemStatus.objects.get(code='OP')
+            # update awb
+            awb = AWB.objects.get(number=request.POST['awb'])
+            awb.status_id=on_process_status.id
+            awb.save()
+            # update itemsite
+            item_site = ItemSite.objects.get(awb_id=awb.id)
+            item_site.status_id=on_process_status.id
+            item_site.save()
+            # insert history
+            History(awb_id=awb.id, status=on_process_status.name).save()
+        except:
+            print traceback.format_exc()
+            
+            # return error response
+            response = {
+                'success': -1,
+                'message': 'Database problem'
+                }
+
+        
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                content_type='application/json')
+
+
+class ItemProcessed(View):
+    def post(self, request):
+        if not request.POST['user_id'] \
+            or not request.POST['awb'] :
+                response = {
+                    'success': -1,
+                    'message': "Parameters are not complete",
+                }
+                return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        try:
+            processed_status = ItemStatus.objects.get(code='PR')
+            #update status awb
+            awb = AWB.objects.get(number=request.POST['awb'])
+            awb.status_id=processed_status.id
+            awb.save()
+            #update status item site
+            item_site = ItemSite.objects.get(awb_id=awb.id)
+            item_site.status_id=processed_status.id
+            item_site.save()
+            # insert history
+            History(awb_id=awb.id, status=processed_status.name).save()
+        except:
+            print traceback.format_exc()
+            
+            # return error response
+            response = {
+                'success': -1,
+                'message': 'Database problem'
+                }
+
+        
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                content_type='application/json')
+
+
+class BaggingApi(View):
+    def post(self, request):
+        if not request.POST['user_id'] \
+                or not request.POST['bag_number'] \
+                or not request.POST.getlist('awb_list'):
+                    response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+                    return HttpResponse(json.dumps(response),
+                                        content_type='application/json')
+                    
+        
+        # create relation between bag and item/awb
+        bag, created = Bag.objects.get_or_create(number=request.POST['bag_number'])
+        processed_status = ItemStatus.objects.get(code='PR')
+        try:
+            for item in request.POST.getlist('awb_list'):
+                #update awb
+                awb = AWB.objects.get(number__iexact=item)
+                awb.status_id = processed_status.id
+                awb.save()
+                #insert bag_item
+                bag_item = BagItem(bag_id=bag.id, awb_id=awb.id)
+                bag_item.save()
+                #update item_site
+                item_site = ItemStatus.objects.get(awb_id=awb.id)
+                item_site.status_id=processed_status.id
+                item_site.save()
+                # insert history
+                History(awb_id=awb.id, status=processed_status.name).save()
+                
+        except:
+            print traceback.format_exc()
+            
+            # return error response
+            response = {
+                'success': -1,
+                'message': 'Database problem'
+                }
+
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                content_type='application/json')
+
+
+            
+
 # required user_id, awb, rack_id
 class InboundApi(View):
     
     def post(self, request):
         if not request.POST['user_id'] \
-                or not request.POST['awb']:
+                or not request.POST['awb'] : 
                     response = {
                         'success': -1,
                         'message': "Parameters are not complete",
@@ -770,19 +903,23 @@ class InboundApi(View):
         except:
             response = {
                     'success': -1,
-                    'message': "Parameter is no valid"
+                    'message': "Operator is no valid"
                     }
             return HttpResponse(json.dumps(response),
                                 content_type='application/json')
-
         location = Site.objects.get(pk=user.site.id)
-        shipped_status = ItemStatus.objects.get(name__iexact='SHIPPED')
-        shipping_status = ItemStatus.objects.get(name__iexact='ON SHIPPING')
 
-
-        item = None
+        #TODO distinct awb and bag_id
+        # check whether parameter is indeed awb or bag_id
+        is_bag = False
+        if request.POST['awb'].startswith('BAG'):
+            is_bag = True
+        
+        awb = None
+        bag = None
         try:
-            item = Item.objects.get(awb__iexact=request.POST['awb'])
+            # TODO filter status equals [SD, OB, UL]
+            awb = AWB.objects.get(awb__iexact=request.POST['awb'])
         except:
             response = {
                     'success': -1,
@@ -794,11 +931,11 @@ class InboundApi(View):
 
         # TODO better use sophisticated mechanism for status
         # set status
-        item_site_status = ItemStatus.objects.get(name__iexact='ON TRANSIT')
-        if location.city.id == item.sender_city_id:
-            item_site_status = ItemStatus.objects.get(name__iexact='MANIFESTED')
-        if location.city.id == item.receiver_city_id:
-            item_site_status = ItemStatus.objects.get(name__iexact='RECEIVED ON DESTINATION')
+        #item_site_status = ItemStatus.objects.get(name__iexact='ON TRANSIT')
+        #if location.city.id == item.sender_city_id:
+        #    item_site_status = ItemStatus.objects.get(name__iexact='MANIFESTED')
+        #if location.city.id == item.receiver_city_id:
+        #    item_site_status = ItemStatus.objects.get(name__iexact='RECEIVED ON DESTINATION')
         
         item_shipment = None
         
@@ -862,13 +999,23 @@ class InsertItemApi(View):
         user = CustomUser.objects.get(pk=request.POST['user_id'])
         location = Site.objects.get(pk=user.site_id)
         # TODO still hardcode
-        status_to_be_collected = ItemStatus.objects.get(name__iexact='TO BE COLLECTED')
+        detail_entry_status = ItemStatus.objects.get(code__exact='SD')
+
         
+        awb = self.get_awb_number()
         try:
+            if awb is None:
+                response = {
+                    'success': -1,
+                    'message': 'Awb generation failed'
+                    }
+                return HttpResponse(json.dumps(response),
+                                     content_type='application/json')
+
             #create item
             item = Item(
                     user_id=user.id,
-                    awb=self.generate_awb(location.id),
+                    awb_id=awb.id,
                     sender_name=request.POST['sender_name'],
                     sender_address=request.POST['sender_address'],
                     sender_zip_code=request.POST['sender_zip_code'],
@@ -883,26 +1030,29 @@ class InsertItemApi(View):
 
             item.sender_city_id=int(request.POST['sender_city_id'])
             item.receiver_city_id=int(request.POST['receiver_city_id'])
-            item.status_id=status_to_be_collected.id
+            item.status_id=detail_entry_status.id
             item.save()
 
             #insert to item_site
             item_site = ItemSite(
-                            item_id=item.id,
+                            awb_id=awb.id,
                             site_id=location.id,
-                            rack_id= request.POST['rack_id'],
                             received_at=timezone.now(),
                             received_by=user.fullname)
             item_site.item_status_id=status_to_be_collected.id
             item_site.save()
 
+
             #insert to History
             history = History(
-                        item_id=item.id,
-                        status=status_to_be_collected.name)
+                        awb_id=awb.id,
+                        status=detail_entry_status.name \
+                                + ' [' + location.name +']')
             history.save()
+
         except:
             print traceback.format_exc()
+            self.release_awb(awb)
             response = {
                 'success': -1,
                 'message': 'Database Problem'
@@ -918,14 +1068,31 @@ class InsertItemApi(View):
         return HttpResponse(json.dumps(response),
                                         content_type='application/json')
 
-    def generate_random(self):
-        number = ''
-        for i in range(8):
-            number += random.choice(string.digits)
-        return number
 
-    def generate_awb(self, site_id):
-        return 'LOGH' + str(site_id).zfill(4) + self.generate_random()
+    # get available awb that has no status in it
+    def get_awb_number(self):
+        awb_number = None
+        try:
+            awb_number = AWB.objects.filter(status__isnull=True).order_by('pk')[0]
+            # update status of awb to SD
+            awb_number.status_id = detail_entry_status.id
+            awb_number.save()
+        except:
+            return None
+        return awb_number
+
+    def release_awb(self, awb):
+        awb.status = None
+        awb.save()
+
+#    def generate_random(self):
+#        number = ''
+#        for i in range(8):
+#            number += random.choice(string.digits)
+#        return number
+
+#    def generate_awb(self, site_id):
+#        return 'LOGH' + str(site_id).zfill(4) + self.generate_random()
 
 
 # required params: user_id, transportation_id, cost
