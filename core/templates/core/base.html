@@ -20,6 +20,9 @@
         <a class="{{ dashboard_active }} item" href="{% url 'core-dashboard' %}" style="color:white">Home</a>
         <a class="{{ tariff_active }} item" href="{% url 'core-tariff' %}" style="color:white">Tariff</a>
         <a class="{{ agent_active }} item" href="{% url 'core-agent' %}" style="color:white">Agent</a>
+        <a class="{{ pickup_active }} item" href="{% url 'core-pickup' %}" style="color:white">Pick Up</a>
+        <a class="{{ manualscan_active }} item" href="{% url 'core-manualscan' %}" style="color:white">Manual Scan</a>
+        <a class="{{ bagging_active }} item" href="{% url 'core-bagging' %}" style="color:white">Bagging</a>
         <div class="right menu">
           <div class="ui dropdown item" style="color:white">
             {{ request.user.email }}<i class="dropdown icon"></i>
@@ -28,6 +31,11 @@
               <a class="item" href="{% url 'logout' %}" style="color:white">Logout</a>
             </div>
           </div>   
+          
+          <div class="item">
+            <div class="ui primary button" onclick="location.href='{% url 'core-consigment' %}'">Input</div>
+          </div>
+
         </div>
       </div>
     </div>   

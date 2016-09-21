@@ -12,6 +12,14 @@ urlpatterns = [
         name='core-agent'),
     url(r'^management/agent/(?P<site_pk>\d+)/user/$',
         views.UserManagementView.as_view(), name='core-user'),
+    url(r'^management/pickup/$', views.PickUpManagementView.as_view(),
+        name='core-pickup'),
+    url(r'^management/manualscan/$', views.ManualScanManagementView.as_view(),
+        name='core-manualscan'),
+    url(r'^management/bagging/$', views.BaggingManagementView.as_view(),
+        name='core-bagging'),
+    url(r'^management/consigment/$', views.ConsignmentNoteManagementView.as_view(),
+        name='core-consigment'),
 
     # API
     url(r'^api/item/insert/$',api.InsertItemApi.as_view(), 
@@ -62,4 +70,7 @@ urlpatterns = [
 
     url(r'^api/item/site/(?P<site_pk>\d+)/$', api.ItemSiteApi.as_view(),
         name='api-item-site'),
+
+    # PICK UP
+
 ]

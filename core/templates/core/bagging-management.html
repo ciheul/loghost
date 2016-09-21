@@ -1,0 +1,155 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header" style="margin-bottom:1em">Bagging</h1>
+
+  <form class="ui form">
+    <div class="fields">
+      <div class="ten wide field">
+        <form class="manual-scan-submission-text">
+          <input class="awb-text" type="text" name="awb" placeholder="AWB">
+        </form>
+      </div>
+      <div class="four wide field">
+        <form class="manual-scan-submission">
+          <input type="submit" value="Add" class="ui button blue awb-submit">
+        </form>
+      </div>
+      <div class="two wide field">
+        <form class="confirm-all">
+          <input type="submit" value="Confirm" class="ui button green">
+        </form>
+      </div>
+    </div>
+  </form>
+
+  <table id="report" class="ui celled table">
+    <thead>
+      <tr>
+        <th>AWB</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>DUMMYAWB</td>
+        <td><div class="mini ui blue button" data-action="update">Update</div><div class="mini ui red button" data-action="delete">Delete</div></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+
+</div>
+
+<div id="modal-container"></div>
+
+{% endblock %}
+
+{% block javascript %}
+
+<script type="text/javascript">
+  
+  $(document).ready(function() {
+    
+    $('#report').DataTable({
+      searching: false,
+      bLengthChange: false,
+      bInfo: false,
+    });
+
+    $('.awb-text').focus(); 
+
+
+  });
+
+  /*$('#report tbody').DataTable({
+    searching: false,
+    bLengthChange: false,
+    bInfo: false,
+    {# serverSide: true, #}
+    // ajax: {
+    //   url: "{% url 'api-tariff-read' %}",
+    //   type: 'GET'
+    // },
+    columns: [
+      {data: 'AWB', className: 'dt-left'},
+      {data: 'Action', className: 'dt-left'},
+    ],
+    columnDefs: [
+      {
+        targets: -1,  
+        render: function(data, type, row, meta) {
+          return ''
+            '<div class="mini ui blue button" data-action="update" data-pk=' + row.action + ' data-origin="' + row.origin+ '" data-destination="' + row.destination + '" data-service="' + row.service + '">Update</div>'
+            +
+            '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-origin="' + row.origin+ '" data-destination="' + row.destination + '" data-service="' + row.service + '">Delete</div>';
+        }
+      }
+    ]
+  });*/
+  
+  var collectionsAdded = [];
+  var value = '<div class="mini ui blue button" data-action="update">Update</div><div class="mini ui red button" data-action="delete">Delete</div>';
+
+  // adding new value to table (by enter)
+  /*$('.awb-text').keyup(function(e) {
+    if(e.which === 13) {
+      // $('.manual-scan-submission').trigger('submit');
+    }
+    console.log('1asd ', e.which, String.fromCharCode(e.which));
+    return false;
+  });*/
+
+  $('.manual-scan-submission').submit(function() {
+    if ($('.awb-text').val() === '') {
+      console.log('empty value');
+      return false;
+    }
+
+    console.log('been submitted');
+    
+    var t = $('#report').DataTable();
+
+    t.row.add( [
+      $('.awb-text').val(),
+      value,
+    ] ).draw( true );
+    
+    // adding to new Collection
+    collectionsAdded.push($('.awb-text').val());
+
+    $('.awb-text').val('');
+    $('.awb-text').focus(); 
+
+    return false;
+  });
+
+  // confirm send all data in table
+  $('.confirm-all').submit(function() {
+    
+    if (collectionsAdded.length === 0) {
+      console.log('Nothing to add.');
+      return false;
+    }
+    
+    console.log('data to send --> ', collectionsAdded);
+    
+    /*$.ajax({
+      'url': '', 
+      'method': '', 
+      'data': {
+        'awbs:' {}
+      },
+
+    }).done(function(response) {
+      collectionsAdded = [];
+    });*/
+
+    return false;
+  });
+
+</script>
+
+{% endblock %}
