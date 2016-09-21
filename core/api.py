@@ -10,7 +10,8 @@ import simplejson as json
 
 from account.models import CustomUser
 from core.models import History, Item, ItemSite, ItemStatus, Site, Tariff, \
-                        Shipment, ItemShipment, AWB, Bag, BagItem
+                        Shipment, ItemShipment, AWB, Bag, BagItem, \
+                        ItemBagShipment
 from core.logics import generate_awb
 
 import traceback, random, string
@@ -670,16 +671,17 @@ class ItemSiteApi(View):
 # required user_id, awb
 class OutboundApi(View):
     
-    @transaction.atomic
     def post(self, request):
-        if not request.POST['user_id'] \
-                or not request.POST['awb']:
-                    response = {
-                        'success': -1,
-                        'message': "Parameters are not complete",
-                    }
-                    return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
+        #if not request.POST['user_id'] \
+        #    or not request.POST['shipment_id'] : \
+        #    response = {
+        #                'success': -1,
+        #                'message': "Parameters are not complete",
+        #    }
+
+        #    return HttpResponse(json.dumps(response),
+        #            content_type='application/json')
+
         # retrieve location
         user = None
         try:
@@ -692,55 +694,62 @@ class OutboundApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json')
 
-        location = Site.objects.get(pk=user.site.id)
-        collected_status = ItemStatus.objects.get(name__iexact='COLLECTED')
-        shipping_status = ItemStatus.objects.get(name__iexact='ON SHIPPING')
+        outbound_status = ItemStatus.objects.get(code__iexact='OB')
 
-        item = None
+        print 'test : ' + str(request.POST.getlist('bag_id_list'))
         try:
-            item = Item.objects.get(awb__iexact=request.POST['awb'])
-        except:
-            response = {
-                    'success': -1,
-                    'message': "Item not found"
-                    }
-            return HttpResponse(json.dumps(response),
-                                content_type='application/json')
+            
+            bag_item_qs = BagItem.objects.filter(
+                            bag_id__in=request.POST.getlist('bag_id_list'))
+            awb_id_list = []
+            for bag_item in list(bag_item_qs):
+                awb_id_list.append(bag_item.awb_id)
 
+            #insert to item_bag_shipment
+            item_bag_list = []
+            for bag_id in request.POST.getlist('bag_id_list'):
+                item_bag_list.append(ItemBagShipment(
+                                        shipment_id=request.POST['shipment_id'],
+                                        bag_id=bag_id))
+            ItemBagShipment.objects.bulk_create(item_bag_list)
 
-        try:
-            # update item_shipment
-            item_shipment = ItemShipment.objects.get(
-                    Q(item_id=item.id) &
-                    Q(shipment__origin_site_id=user.site.id))
-            item_shipment.item_shipment_status_id_id=shipping_status.id
-            item_shipment.save()
+            #insert to item shipment
+            awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
+            item_shipment_list = []
+            for item in list(awb_qs):
+                awb_id_list.append(item.id)
+                item_shipment_list.append(ItemShipment(
+                                        shipment_id=request.POST['shipment_id'],
+                                        awb_id=item.id))
+            ItemShipment.objects.bulk_create(item_shipment_list)
 
+            #update status awb
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=outbound_status.id)
 
-            # update item_site
-            item_site = ItemSite.objects.get(
-                Q(item_id=item.id) &
-                Q(site_id=user.site.id))
-            item_site.item_status_id = collected_status.id
-            item_site.updated_at = timezone.now()
-            item_site.save()
+            #update status item site
+            ItemSite.objects.filter(awb_id__in=awb_id_list) \
+                    .update(item_status_id=outbound_status.id)
 
-       
-            #insert to History
-            history = History(
-                        item_id=item.id,
-                        status=collected_status.name)
+            #insert to history
+            history_list = []
+            for awb_id in awb_id_list:
+                history_list.append(History(
+                                    awb_id=awb_id,
+                                    status=outbound_status.name  \
+                                            + ' [' + user.site.name + ']' ))
+            History.objects.bulk_create(history_list)
 
-            history.save()
         except:
             print traceback.format_exc()
+            # return error response
             response = {
-                    'success': -1,
-                    'message': "Database Problem"
-                    }
+                'success': -1,
+                'message': 'Database problem'
+                }
+
             return HttpResponse(json.dumps(response),
                                 content_type='application/json')
-
 
         # return response
         response = {
@@ -754,7 +763,7 @@ class OutboundApi(View):
 class ItemOnProcess(View):
     def post(self, request):
         if not request.POST['user_id'] \
-            or not request.POST['awb'] :
+            or not request.POST['awb_list'] :
                 response = {
                     'success': -1,
                     'message': "Parameters are not complete",
@@ -762,18 +771,38 @@ class ItemOnProcess(View):
                 return HttpResponse(json.dumps(response),
                         content_type='application/json')
 
+        user = None
+        try:
+            user = CustomUser.objects.get(pk=request.POST['user_id'])
+        except:
+            response = {
+                    'success': -1,
+                    'message': "Parameter is no valid"
+                    }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json')
+
         try:
             on_process_status = ItemStatus.objects.get(code='OP')
+            awb_id_list = []
+            awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
+
+            for awb in list(awb_qs):
+                awb_id_list.append(awb.id)
+
             # update awb
-            awb = AWB.objects.get(number=request.POST['awb'])
-            awb.status_id=on_process_status.id
-            awb.save()
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=on_process_status.id)
             # update itemsite
-            item_site = ItemSite.objects.get(awb_id=awb.id)
-            item_site.status_id=on_process_status.id
-            item_site.save()
+            ItemSite.objects.filter(Q(site_id=user.site.id) and 
+                            Q(awb_id__in=awb_id_list)) \
+                            .update(item_status_id=on_process_status.id)
             # insert history
-            History(awb_id=awb.id, status=on_process_status.name).save()
+            history_list = []
+            for awb_id in awb_id_list:
+                history_list.append(History(awb_id=awb_id, 
+                        status=on_process_status.name))
+            History.objects.bulk_create(history_list)
         except:
             print traceback.format_exc()
             
@@ -782,6 +811,8 @@ class ItemOnProcess(View):
                 'success': -1,
                 'message': 'Database problem'
                 }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json')
 
         
         # return response
@@ -795,7 +826,7 @@ class ItemOnProcess(View):
 class ItemProcessed(View):
     def post(self, request):
         if not request.POST['user_id'] \
-            or not request.POST['awb'] :
+            or not request.POST['awb_list'] :
                 response = {
                     'success': -1,
                     'message': "Parameters are not complete",
@@ -803,18 +834,39 @@ class ItemProcessed(View):
                 return HttpResponse(json.dumps(response),
                         content_type='application/json')
 
+        user = None
+        try:
+            user = CustomUser.objects.get(pk=request.POST['user_id'])
+        except:
+            response = {
+                    'success': -1,
+                    'message': "Parameter is no valid"
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+
         try:
             processed_status = ItemStatus.objects.get(code='PR')
-            #update status awb
-            awb = AWB.objects.get(number=request.POST['awb'])
-            awb.status_id=processed_status.id
-            awb.save()
-            #update status item site
-            item_site = ItemSite.objects.get(awb_id=awb.id)
-            item_site.status_id=processed_status.id
-            item_site.save()
+            awb_id_list = []
+            awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
+
+            for awb in list(awb_qs):
+                awb_id_list.append(awb.id)
+
+            # update awb
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=processed_status.id)
+            # update itemsite
+            ItemSite.objects.filter(Q(site_id=user.site.id) and 
+                            Q(awb_id__in=awb_id_list)) \
+                            .update(status_id=processed_status.id)
             # insert history
-            History(awb_id=awb.id, status=processed_status.name).save()
+            history_list = []
+            for awb_id in awb_id_list:
+                history_list.append(History(awb_id=awb_id, 
+                        status=processed_status.name))
+            History.objects.bulk_create(history_list)
         except:
             print traceback.format_exc()
             
@@ -823,6 +875,8 @@ class ItemProcessed(View):
                 'success': -1,
                 'message': 'Database problem'
                 }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
 
         
         # return response
@@ -849,22 +903,40 @@ class BaggingApi(View):
         # create relation between bag and item/awb
         bag, created = Bag.objects.get_or_create(number=request.POST['bag_number'])
         processed_status = ItemStatus.objects.get(code='PR')
+        
+        # clear previous assignment
+        if created is False:
+            BagItem.objects.filter(bag_id=bag.id).delete()
+
         try:
-            for item in request.POST.getlist('awb_list'):
-                #update awb
-                awb = AWB.objects.get(number__iexact=item)
-                awb.status_id = processed_status.id
-                awb.save()
-                #insert bag_item
-                bag_item = BagItem(bag_id=bag.id, awb_id=awb.id)
-                bag_item.save()
-                #update item_site
-                item_site = ItemStatus.objects.get(awb_id=awb.id)
-                item_site.status_id=processed_status.id
-                item_site.save()
-                # insert history
-                History(awb_id=awb.id, status=processed_status.name).save()
-                
+            awb_qs = AWB.objects.filter( \
+                    number__in=request.POST.getlist('awb_list'))
+
+            awb_id_list= []
+            for awb in list(awb_qs):
+                awb_id_list.append(awb.id)
+
+            #update awb status
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=processed_status.id)
+
+            #update item site status
+            ItemSite.objects.filter(awb_id__in=awb_id_list) \
+                    .update(item_status_id=processed_status.id)
+
+            #insert bag item and hisotry
+            bag_item_list = []
+            history_list = []
+            for awb_id in awb_id_list:
+                bag_item_list.append(BagItem(
+                                        bag_id= bag.id,
+                                        awb_id=awb_id))
+                history_list.append(History(
+                                awb_id=awb_id,
+                                status= processed_status.name))
+            BagItem.objects.bulk_create(bag_item_list)
+            History.objects.bulk_create(history_list)
+
         except:
             print traceback.format_exc()
             
@@ -873,6 +945,8 @@ class BaggingApi(View):
                 'success': -1,
                 'message': 'Database problem'
                 }
+            return HttpResponse(json.dumps(response),
+                content_type='application/json')
 
         # return response
         response = {
@@ -884,7 +958,7 @@ class BaggingApi(View):
 
             
 
-class InboundBulkApi(View):
+class InboundApi(View):
     
     def post(self, request):
         if not request.POST['user_id'] \
@@ -916,23 +990,54 @@ class InboundBulkApi(View):
         bag_id_list = []
         awb_list = []
         
-        for item in awb_list:
+        for item in request.POST.getlist('awb_list'):
             if item.startswith('BAG'):
-                bag_id_list.append(item, arrived_status.id, user)
+                bag_id_list.append(item)
             else:
-                awb_list.append(item, arrived_status.id, user)
-        
+                awb_list.append(item)
+
         try:
-            self.update_status_items(awb_list)
-            self.update_status_item_on_bags(bag_id_list)
+            bag_item_qs = BagItem.objects.filter(bag_id__in=bag_id_list)
+            
+            awb_id_list = []
+            #append awb_id to list from BagItem
+            for bag_item in list(bag_item_qs):
+                awb_id_list.append(bag_item.awb_id)
+
+            #append awb_id to list from AWB
+            awb_qs = AWB.objects.filter(number__in=awb_list)
+            for awb in list(awb_qs):
+                awb_id_list.append(awb.id)
+
+            print str(awb_id_list)
+            #update status AWB
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=arrived_status.id)
+            
+            # insert item site and history
+            item_site_list = []
+            history_list = []
+            for awb_id in awb_id_list:
+                item_site_list.append(ItemSite(
+                                        awb_id=awb_id,
+                                        site_id=user.site.id,
+                                        received_at=timezone.now(),
+                                        received_by=user.fullname,
+                                        item_status_id=arrived_status.id))
+                history_list.append(History(
+                                        awb_id=awb_id,
+                                        status=arrived_status.name \
+                                                + '[ ' + user.site.name + ']'))
+            ItemSite.objects.bulk_create(item_site_list)
+            History.objects.bulk_create(history_list)
         except:
-            print 
+            print traceback.format_exc()
             response = {
                     'success': -1,
                     'message': "Database problem"
                     }
             return HttpResponse(json.dumps(response),
-                                content_type='application/json')
+                        content_type='application/json')
 
         # return response
         response = {
@@ -940,42 +1045,6 @@ class InboundBulkApi(View):
             }
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
-
-
-    def update_status_items(self, awb_list, status_id, user):
-        for item in awb_list:
-           self.update_status_item(item, status_id, user)
-
-    def update_status_item_on_bags(self, bag_id_list, status_id, user):
-        for bag_id in bag_id_list:
-            bag_item_qs = BagItem.objects.filter(bag_id=bag_id)
-            for bag_item in bag_item_qs.iterator():
-                self.update_status_item_by_id(bag_item.awb_id, status_id, user)
-
-    def update_status_item_by_id(self, awb_id, status_id, user):
-        awb = AWB.objects.get(pk=awb_id)
-        awb.status_id = status_id
-        awb.save()
-
-        item = ItemSite(
-                awb_id=awb_id,
-                site_id=user.site.id,
-                received_at=timezone.now(),
-                received_by=user.fullname)
-        item.save()
-
-    def update_status_item(self, awb_number, status_id, user):
-        awb = AWB.objects.get(number=awb_number)
-        awb.status_id = status_id
-        awb.save()
-
-        item = ItemSite(
-                awb_id=awb_id,
-                site_id=user.site.id,
-                received_at=timezone.now(),
-                received_by=user.fullname)
-        item.save()
-
 
 class InsertItemApi(View):
 
@@ -1044,7 +1113,7 @@ class InsertItemApi(View):
                 'message': 'Database Problem'
                 }
             return HttpResponse(json.dumps(response),
-                                            content_type='application/json')
+                            content_type='application/json')
             
 
         # return response
@@ -1052,7 +1121,7 @@ class InsertItemApi(View):
             'success': 0
             }
         return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
+                    content_type='application/json')
 
 
     # get available awb that has no status in it
@@ -1072,85 +1141,36 @@ class InsertItemApi(View):
         awb.status = None
         awb.save()
 
-#    def generate_random(self):
-#        number = ''
-#        for i in range(8):
-#            number += random.choice(string.digits)
-#        return number
-
-#    def generate_awb(self, site_id):
-#        return 'LOGH' + str(site_id).zfill(4) + self.generate_random()
-
 
 # required params: user_id, transportation_id, cost
-class RunsheetApi(View):
+class CreateRunsheetApi(View):
 
     def post(self, request):
-        staff = CustomUser.objects.get(pk=request.POST['user_id'])
-
-        # TODO still hardcode
-        status_to_be_collected = ItemStatus.objects.get(name__iexact='TO BE COLLECTED')
-        
-        
-        # retrieve same city agent
-        agent_qs = Site.objects.filter(Q(city_id=staff.site.city_id) &
-                        (Q(type__name='Agen') | Q(type__name='Sub Agen')))
-         
-        
-        # no agent to collect
-        if not agent_qs:
-            response = {
-                'success': -1,
-                'message': 'No agent to collect'
-                
-            }
-            return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
-
-        #example : {'agent_id':'query_set_item_to_be_collect'}
-        agent_items = {}
-        for agent in agent_qs.iterator():
-            item_to_collect = ItemSite.objects.filter(
-                Q(item_status_id=status_to_be_collected.id) &
-                Q(site_id=agent.id))
-            if not item_to_collect:
-                continue
-            agent_items.update({agent.id : item_to_collect})
-
-        # no item to collect
-        if not agent_items:
-            response = {
-                'success': -1,
-                'message': 'No item to collect'
-                
-            }
-            return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
+        user = CustomUser.objects.get(pk=request.POST['user_id'])
 
         # TODO need mechanism to check whether runsheet has been generated 
         #       to avoid staff to generate DOUBLE runsheet
 
-        # generate for every agent / site
-        for site_id, item_qs in agent_items.items():
+       
+        try:
             # create runsheet
             runsheet = Shipment(
-                        cost=request.POST['cost'],
-                        transportation_id=request.POST['transportation_id'])
-            runsheet.origin_site_id = site_id
-            runsheet.destination_site = staff.site
+                cost=request.POST['cost'],
+                transportation_id=request.POST['transportation_id'])
+            runsheet.origin_site_id = user.site.id
+            runsheet.destination_site_id = request.POST['destination_site_id']
             runsheet.save()
+        except:
+            print traceback.format_exc()
+            response = {
+                'success': -1,
+                'message': 'Database Problem'
+                }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
+
         
-            # TODO mechanism to generate bag id
-            bag_id = 'BAG0001'
-
-            # insert item_shipment
-            for item_site in item_qs.iterator():
-                ItemShipment.objects.create(
-                        item_id=item_site.item_id,
-                        shipment=runsheet,
-                        bag_id=bag_id,
-                        item_shipment_status_id=status_to_be_collected)
-
+           
         # return response
         response = {
             'success': 0

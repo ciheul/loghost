@@ -16,14 +16,16 @@ urlpatterns = [
     # API
     url(r'^api/item/insert/$',api.InsertItemApi.as_view(), 
         name='api-item-insert'),
-    url(r'^api/runsheet/$',api.RunsheetApi.as_view(), 
+    url(r'^api/runsheet/create/$',api.CreateRunsheetApi.as_view(), 
         name='api-runsheet'),
     url(r'^api/outbound/$',api.OutboundApi.as_view(), 
         name='api-outbound'),
-    url(r'^api/inbound/bulk/$',api.InboundBulkApi.as_view(), 
+    url(r'^api/inbound/$',api.InboundApi.as_view(), 
         name='api-inbound'),
     url(r'^api/bagging/$',api.BaggingApi.as_view(), 
         name='api-bagging'),
+    url(r'^api/onprocess/$',api.ItemOnProcess.as_view(), 
+        name='api-onprocess'),
 
 
     # TARIFF
