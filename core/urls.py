@@ -20,7 +20,7 @@ urlpatterns = [
         name='api-runsheet'),
     url(r'^api/outbound/$',api.OutboundApi.as_view(), 
         name='api-outbound'),
-    url(r'^api/inbound/$',api.InboundApi.as_view(), 
+    url(r'^api/inbound/bulk/$',api.InboundBulkApi.as_view(), 
         name='api-inbound'),
     url(r'^api/bagging/$',api.BaggingApi.as_view(), 
         name='api-bagging'),
