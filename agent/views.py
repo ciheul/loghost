@@ -4,8 +4,8 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from core.models import City, GoodType, PaymentType, Service
-from report.agent import AgentReport
-
+from report  import coree
+from report import agentnew
 
 class AgentView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -55,6 +55,29 @@ class ReportView(AgentView):
         response = report.print_awb(request)
         return response
 
+class BlankReportView(AgentView):
+    def post(self, request):
+        report = coree.Report()
+        response = report.run()
+        return response
+
+class NewReportView(AgentView):
+    def post(self, request):
+        report = agentnew.Report()
+        response = report.run()
+        return response
+
+class DeliveryReportView(AgentView):
+    def post(self, request):
+        report = agentnew.DeliveryReport()
+        response = report.run()
+        return response
+
+class ManifestReportView(AgentView):
+    def post(self, request):
+        report = coree.ManifestReport()
+        response = report.run()
+        return response
 
 class ProfileView(AgentView):
     def get(self, request):

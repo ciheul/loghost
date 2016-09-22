@@ -27,6 +27,38 @@
 
   <h3 class="ui dividing header">Berita</h3>
   <div class="ui divided items">
+    <div class="item">  
+      <div class="content">
+        <form class="printblank" method="post" action="/agent/blank/report/">    
+            <button class="ui primary button" id="print-blank-form" tabindex="0">
+            Print Bukti Terima Kosong
+            </button>
+        </form>
+      </div>   
+    </div>
+    <div class="item">  
+      <div class="content">
+        <form class="printblank" method="post" action="/agent/new/report/">    
+            <button class="ui primary button" id="print-blank-form" tabindex="0">
+            Print New Report
+            </button>
+        </form>
+      </div>   
+    </div>
+    <div class="item">  
+        <div class="content">
+            <form class="printblank" method="post" action="/agent/delivery/report/">
+                <button class="ui primary button" id="print-blank-form" tabindex="0">Print Delivery Report</button>
+            </form>
+        </div>
+    </div>        
+    <div class="item">  
+        <div class="content">
+            <form class="printblank" method="post" action="/agent/manifest/report/">
+                <button class="ui primary button" id="print-blank-form" tabindex="0">Print Manifest Report</button>
+            </form>
+        </div>
+    </div>       
     <div class="item">
       <div class="content">
         <a class="header">Family Gathering Agen Area 51 di Tangerang</a>
@@ -49,5 +81,6 @@
         </div>
       </div>
     </div>
-  </div>
+</div>
+
 {% endblock %}
