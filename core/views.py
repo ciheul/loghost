@@ -6,6 +6,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from core.models import City, Service, Site, SiteType, GoodType, PaymentType
+from core.models import Transportation 
 
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -76,7 +77,7 @@ class ManualScanManagementView(StaffView):
 class BaggingManagementView(StaffView):
     def get(self, request):
         context = {
-            'baggin_active': 'active'
+            'bagging_active': 'active'
         }
         return render(request, 'core/bagging-management.html', context)
 
@@ -91,3 +92,13 @@ class ConsignmentNoteManagementView(StaffView):
             'services': Service.objects.all(),
         }
         return render(request, 'core/consignment-note.html', context)
+
+class ManifestingManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'manifesting_active': 'active',
+            'transports': Transportation.objects.all().order_by('identifier'),
+            'cities': City.objects.all().order_by('name'),
+        }
+        return render(request, 'core/manifesting.html', context)
+

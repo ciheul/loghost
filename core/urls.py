@@ -20,6 +20,8 @@ urlpatterns = [
         name='core-bagging'),
     url(r'^management/consigment/$', views.ConsignmentNoteManagementView.as_view(),
         name='core-consigment'),
+    url(r'^management/manifest/$', views.ManifestingManagementView.as_view(),
+        name='core-manifest'),
 
     # API
     url(r'^api/item/insert/$',api.InsertItemApi.as_view(), 

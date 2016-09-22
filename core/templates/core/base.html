@@ -21,8 +21,29 @@
         <a class="{{ tariff_active }} item" href="{% url 'core-tariff' %}" style="color:white">Tariff</a>
         <a class="{{ agent_active }} item" href="{% url 'core-agent' %}" style="color:white">Agent</a>
         <a class="{{ pickup_active }} item" href="{% url 'core-pickup' %}" style="color:white">Pick Up</a>
-        <a class="{{ manualscan_active }} item" href="{% url 'core-manualscan' %}" style="color:white">Manual Scan</a>
-        <a class="{{ bagging_active }} item" href="{% url 'core-bagging' %}" style="color:white">Bagging</a>
+
+
+        <div id="cross-check" class="ui dropdown icon item" tabindex="0" style="color:white;">
+          
+          <span class='nav-point'>Cross Check</span><i class="dropdown icon"></i>
+          <div class="menu transition hidden" tabindex="-1">
+            <div class="{{ manualscan_active }} item">
+              <a class="" href="{% url 'core-manualscan' %}" >Manual Scan</a>
+            </div>
+            <div class="{{ bagging_active }} item">
+              <a class="" href="{% url 'core-bagging' %}">Bagging</a>
+            </div>
+            <div class="divider"></div>
+            <div class="header">
+              Manifest - Airport
+            </div>
+            <div class="{{ manifesting_active }} item">
+              <a class="" href="{% url 'core-manifest' %}">Manifest</a>
+            </div>
+          </div>
+        </div>
+
+
         <div class="right menu">
           <div class="ui dropdown item" style="color:white">
             {{ request.user.email }}<i class="dropdown icon"></i>
@@ -49,11 +70,12 @@
     <script type="text/javascript" src="{% static 'loghost/bower_components/js-cookie/src/js.cookie.js' %}"></script>
     <script type="text/javascript" src="{% static 'loghost/bower_components/underscore/underscore-min.js' %}"></script>
     <script type="text/javascript" src="{% static 'loghost/js/misc.js' %}"></script>
+    <script type="text/javascript" src="{% static 'loghost/js/header_scripting.js' %}"></script>
 
     <script>
     $('.dropdown').dropdown();
     </script>
-
+    
     {% block javascript %}{% endblock%}
 
   </body>
