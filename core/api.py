@@ -5,12 +5,13 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
 from django.views.generic import View
-
+from datetime import datetime
 import simplejson as json
 
 from account.models import CustomUser
 from core.models import History, Item, ItemSite, ItemStatus, Site, Tariff, \
-                        Shipment, ItemShipment, AWB, Bag, BagItem
+                        Shipment, ItemShipment, AWB, Bag, BagItem, \
+                        ItemBagShipment, Incident, Delivery
 from core.logics import generate_awb
 
 import traceback, random, string
@@ -667,19 +668,21 @@ class ItemSiteApi(View):
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
 
-# required user_id, awb
+
+#user_id, shipment_id, awb_list, bag_id_list
 class OutboundApi(View):
     
-    @transaction.atomic
     def post(self, request):
-        if not request.POST['user_id'] \
-                or not request.POST['awb']:
-                    response = {
-                        'success': -1,
-                        'message': "Parameters are not complete",
-                    }
-                    return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
+        #if not request.POST['user_id'] \
+        #    or not request.POST['shipment_id'] : \
+        #    response = {
+        #                'success': -1,
+        #                'message': "Parameters are not complete",
+        #    }
+
+        #    return HttpResponse(json.dumps(response),
+        #            content_type='application/json')
+
         # retrieve location
         user = None
         try:
@@ -692,55 +695,62 @@ class OutboundApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json')
 
-        location = Site.objects.get(pk=user.site.id)
-        collected_status = ItemStatus.objects.get(name__iexact='COLLECTED')
-        shipping_status = ItemStatus.objects.get(name__iexact='ON SHIPPING')
+        outbound_status = ItemStatus.objects.get(code__iexact='OB')
 
-        item = None
+        print 'test : ' + str(request.POST.getlist('bag_id_list'))
         try:
-            item = Item.objects.get(awb__iexact=request.POST['awb'])
-        except:
-            response = {
-                    'success': -1,
-                    'message': "Item not found"
-                    }
-            return HttpResponse(json.dumps(response),
-                                content_type='application/json')
+            
+            bag_item_qs = BagItem.objects.filter(
+                            bag_id__in=request.POST.getlist('bag_id_list'))
+            awb_id_list = []
+            for bag_item in list(bag_item_qs):
+                awb_id_list.append(bag_item.awb_id)
 
+            #insert to item_bag_shipment
+            item_bag_list = []
+            for bag_id in request.POST.getlist('bag_id_list'):
+                item_bag_list.append(ItemBagShipment(
+                                        shipment_id=request.POST['shipment_id'],
+                                        bag_id=bag_id))
+            ItemBagShipment.objects.bulk_create(item_bag_list)
 
-        try:
-            # update item_shipment
-            item_shipment = ItemShipment.objects.get(
-                    Q(item_id=item.id) &
-                    Q(shipment__origin_site_id=user.site.id))
-            item_shipment.item_shipment_status_id_id=shipping_status.id
-            item_shipment.save()
+            #insert to item shipment
+            awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
+            item_shipment_list = []
+            for item in list(awb_qs):
+                awb_id_list.append(item.id)
+                item_shipment_list.append(ItemShipment(
+                                        shipment_id=request.POST['shipment_id'],
+                                        awb_id=item.id))
+            ItemShipment.objects.bulk_create(item_shipment_list)
 
+            #update status awb
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=outbound_status.id)
 
-            # update item_site
-            item_site = ItemSite.objects.get(
-                Q(item_id=item.id) &
-                Q(site_id=user.site.id))
-            item_site.item_status_id = collected_status.id
-            item_site.updated_at = timezone.now()
-            item_site.save()
+            #update status item site
+            ItemSite.objects.filter(awb_id__in=awb_id_list) \
+                    .update(item_status_id=outbound_status.id)
 
-       
-            #insert to History
-            history = History(
-                        item_id=item.id,
-                        status=collected_status.name)
+            #insert to history
+            history_list = []
+            for awb_id in awb_id_list:
+                history_list.append(History(
+                                    awb_id=awb_id,
+                                    status=outbound_status.name  \
+                                            + ' [' + user.site.name + ']' ))
+            History.objects.bulk_create(history_list)
 
-            history.save()
         except:
             print traceback.format_exc()
+            # return error response
             response = {
-                    'success': -1,
-                    'message': "Database Problem"
-                    }
+                'success': -1,
+                'message': 'Database problem'
+                }
+
             return HttpResponse(json.dumps(response),
                                 content_type='application/json')
-
 
         # return response
         response = {
@@ -750,30 +760,50 @@ class OutboundApi(View):
                                         content_type='application/json')
 
 
-
+#user_id, awb_list
 class ItemOnProcess(View):
     def post(self, request):
         if not request.POST['user_id'] \
-            or not request.POST['awb'] :
+            or not request.POST['awb_list'] :
                 response = {
                     'success': -1,
                     'message': "Parameters are not complete",
                 }
                 return HttpResponse(json.dumps(response),
                         content_type='application/json')
+
+        user = None
+        try:
+            user = CustomUser.objects.get(pk=request.POST['user_id'])
+        except:
+            response = {
+                    'success': -1,
+                    'message': "Parameter is no valid"
+                    }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json')
 
         try:
             on_process_status = ItemStatus.objects.get(code='OP')
+            awb_id_list = []
+            awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
+
+            for awb in list(awb_qs):
+                awb_id_list.append(awb.id)
+
             # update awb
-            awb = AWB.objects.get(number=request.POST['awb'])
-            awb.status_id=on_process_status.id
-            awb.save()
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=on_process_status.id)
             # update itemsite
-            item_site = ItemSite.objects.get(awb_id=awb.id)
-            item_site.status_id=on_process_status.id
-            item_site.save()
+            ItemSite.objects.filter(Q(site_id=user.site.id) and 
+                            Q(awb_id__in=awb_id_list)) \
+                            .update(item_status_id=on_process_status.id)
             # insert history
-            History(awb_id=awb.id, status=on_process_status.name).save()
+            history_list = []
+            for awb_id in awb_id_list:
+                history_list.append(History(awb_id=awb_id, 
+                        status=on_process_status.name))
+            History.objects.bulk_create(history_list)
         except:
             print traceback.format_exc()
             
@@ -782,6 +812,8 @@ class ItemOnProcess(View):
                 'success': -1,
                 'message': 'Database problem'
                 }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json')
 
         
         # return response
@@ -792,10 +824,11 @@ class ItemOnProcess(View):
                 content_type='application/json')
 
 
+#user_id, awb_list
 class ItemProcessed(View):
     def post(self, request):
         if not request.POST['user_id'] \
-            or not request.POST['awb'] :
+            or not request.POST['awb_list'] :
                 response = {
                     'success': -1,
                     'message': "Parameters are not complete",
@@ -803,18 +836,39 @@ class ItemProcessed(View):
                 return HttpResponse(json.dumps(response),
                         content_type='application/json')
 
+        user = None
+        try:
+            user = CustomUser.objects.get(pk=request.POST['user_id'])
+        except:
+            response = {
+                    'success': -1,
+                    'message': "Parameter is no valid"
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+
         try:
             processed_status = ItemStatus.objects.get(code='PR')
-            #update status awb
-            awb = AWB.objects.get(number=request.POST['awb'])
-            awb.status_id=processed_status.id
-            awb.save()
-            #update status item site
-            item_site = ItemSite.objects.get(awb_id=awb.id)
-            item_site.status_id=processed_status.id
-            item_site.save()
+            awb_id_list = []
+            awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
+
+            for awb in list(awb_qs):
+                awb_id_list.append(awb.id)
+
+            # update awb
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=processed_status.id)
+            # update itemsite
+            ItemSite.objects.filter(Q(site_id=user.site.id) and 
+                            Q(awb_id__in=awb_id_list)) \
+                            .update(status_id=processed_status.id)
             # insert history
-            History(awb_id=awb.id, status=processed_status.name).save()
+            history_list = []
+            for awb_id in awb_id_list:
+                history_list.append(History(awb_id=awb_id, 
+                        status=processed_status.name))
+            History.objects.bulk_create(history_list)
         except:
             print traceback.format_exc()
             
@@ -823,6 +877,8 @@ class ItemProcessed(View):
                 'success': -1,
                 'message': 'Database problem'
                 }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
 
         
         # return response
@@ -833,6 +889,7 @@ class ItemProcessed(View):
                 content_type='application/json')
 
 
+#user_id, bag_number, awb_list
 class BaggingApi(View):
     def post(self, request):
         if not request.POST['user_id'] \
@@ -849,22 +906,40 @@ class BaggingApi(View):
         # create relation between bag and item/awb
         bag, created = Bag.objects.get_or_create(number=request.POST['bag_number'])
         processed_status = ItemStatus.objects.get(code='PR')
+        
+        # clear previous assignment
+        if created is False:
+            BagItem.objects.filter(bag_id=bag.id).delete()
+
         try:
-            for item in request.POST.getlist('awb_list'):
-                #update awb
-                awb = AWB.objects.get(number__iexact=item)
-                awb.status_id = processed_status.id
-                awb.save()
-                #insert bag_item
-                bag_item = BagItem(bag_id=bag.id, awb_id=awb.id)
-                bag_item.save()
-                #update item_site
-                item_site = ItemStatus.objects.get(awb_id=awb.id)
-                item_site.status_id=processed_status.id
-                item_site.save()
-                # insert history
-                History(awb_id=awb.id, status=processed_status.name).save()
-                
+            awb_qs = AWB.objects.filter( \
+                    number__in=request.POST.getlist('awb_list'))
+
+            awb_id_list= []
+            for awb in list(awb_qs):
+                awb_id_list.append(awb.id)
+
+            #update awb status
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=processed_status.id)
+
+            #update item site status
+            ItemSite.objects.filter(awb_id__in=awb_id_list) \
+                    .update(item_status_id=processed_status.id)
+
+            #insert bag item and hisotry
+            bag_item_list = []
+            history_list = []
+            for awb_id in awb_id_list:
+                bag_item_list.append(BagItem(
+                                        bag_id= bag.id,
+                                        awb_id=awb_id))
+                history_list.append(History(
+                                awb_id=awb_id,
+                                status= processed_status.name))
+            BagItem.objects.bulk_create(bag_item_list)
+            History.objects.bulk_create(history_list)
+
         except:
             print traceback.format_exc()
             
@@ -873,6 +948,8 @@ class BaggingApi(View):
                 'success': -1,
                 'message': 'Database problem'
                 }
+            return HttpResponse(json.dumps(response),
+                content_type='application/json')
 
         # return response
         response = {
@@ -883,13 +960,12 @@ class BaggingApi(View):
 
 
             
-
-# required user_id, awb, rack_id
+#user_id, awb_list
 class InboundApi(View):
     
     def post(self, request):
         if not request.POST['user_id'] \
-                or not request.POST['awb'] : 
+                or not request.POST.getlist('awb_list') : 
                     response = {
                         'success': -1,
                         'message': "Parameters are not complete",
@@ -903,95 +979,77 @@ class InboundApi(View):
         except:
             response = {
                     'success': -1,
-                    'message': "Operator is no valid"
+                    'message': "User is not valid"
                     }
             return HttpResponse(json.dumps(response),
                                 content_type='application/json')
-        location = Site.objects.get(pk=user.site.id)
+
+        #location = Site.objects.get(pk=user.site.id)
+
+        arrived_status = ItemStatus.objects.get(code='AF')
 
         #TODO distinct awb and bag_id
         # check whether parameter is indeed awb or bag_id
-        is_bag = False
-        if request.POST['awb'].startswith('BAG'):
-            is_bag = True
+        bag_id_list = []
+        awb_list = []
         
-        awb = None
-        bag = None
-        try:
-            # TODO filter status equals [SD, OB, UL]
-            awb = AWB.objects.get(awb__iexact=request.POST['awb'])
-        except:
-            response = {
-                    'success': -1,
-                    'message': "Item not found"
-                    }
-            return HttpResponse(json.dumps(response),
-                                content_type='application/json')
-
-
-        # TODO better use sophisticated mechanism for status
-        # set status
-        #item_site_status = ItemStatus.objects.get(name__iexact='ON TRANSIT')
-        #if location.city.id == item.sender_city_id:
-        #    item_site_status = ItemStatus.objects.get(name__iexact='MANIFESTED')
-        #if location.city.id == item.receiver_city_id:
-        #    item_site_status = ItemStatus.objects.get(name__iexact='RECEIVED ON DESTINATION')
-        
-        item_shipment = None
-        
-        try:
-            # update item_shipment
-            item_shipment = ItemShipment.objects.get(
-                    Q(item_id=item.id) &
-                    Q(item_shipment_status_id_id=shipping_status.id))
-        except:
-            response = {
-                    'success': -1,
-                    'message': "Item not found"
-                    }
-            return HttpResponse(json.dumps(response),
-                                content_type='application/json')
+        for item in request.POST.getlist('awb_list'):
+            if item.startswith('BAG'):
+                bag_id_list.append(item)
+            else:
+                awb_list.append(item)
 
         try:
-            item_shipment.item_shipment_status_id_id=shipped_status.id
-            item_shipment.save()
+            bag_item_qs = BagItem.objects.filter(bag_id__in=bag_id_list)
+            
+            awb_id_list = []
+            #append awb_id to list from BagItem
+            for bag_item in list(bag_item_qs):
+                awb_id_list.append(bag_item.awb_id)
 
-            # insert item_site
-            item_site = ItemSite(
-                            item_id=item.id,
-                            site_id=user.site.id,
-                            rack_id=request.POST['rack_id'],
-                            received_at=timezone.now(),
-                            received_by=user.fullname)
-            item_site.item_status_id_id=item_site_status.id
-            item_site.save()
-       
-            #insert to History
-            history = History(
-                        item_id=item.id,
-                        status=item_site_status.name)
-            history.save()
+            #append awb_id to list from AWB
+            awb_qs = AWB.objects.filter(number__in=awb_list)
+            for awb in list(awb_qs):
+                awb_id_list.append(awb.id)
+
+            print str(awb_id_list)
+            #update status AWB
+            AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=arrived_status.id)
+            
+            # insert item site and history
+            item_site_list = []
+            history_list = []
+            for awb_id in awb_id_list:
+                item_site_list.append(ItemSite(
+                                        awb_id=awb_id,
+                                        site_id=user.site.id,
+                                        received_at=timezone.now(),
+                                        received_by=user.fullname,
+                                        item_status_id=arrived_status.id))
+                history_list.append(History(
+                                        awb_id=awb_id,
+                                        status=arrived_status.name \
+                                                + '[ ' + user.site.name + ']'))
+            ItemSite.objects.bulk_create(item_site_list)
+            History.objects.bulk_create(history_list)
         except:
             print traceback.format_exc()
-            
-            # return error response
             response = {
-                'success': -1,
-                'message': 'Database problem'
-                }
+                    'success': -1,
+                    'message': "Database problem"
+                    }
             return HttpResponse(json.dumps(response),
-                                            content_type='application/json')
-
+                        content_type='application/json')
 
         # return response
         response = {
             'success': 0
             }
         return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
+                content_type='application/json')
 
-
-class InsertItemApi(View):
+class ItemInsertApi(View):
 
     def post(self, request):
 
@@ -1002,7 +1060,7 @@ class InsertItemApi(View):
         detail_entry_status = ItemStatus.objects.get(code__exact='SD')
 
         
-        awb = self.get_awb_number()
+        awb = self.get_awb_number(detail_entry_status.id)
         try:
             if awb is None:
                 response = {
@@ -1039,7 +1097,7 @@ class InsertItemApi(View):
                             site_id=location.id,
                             received_at=timezone.now(),
                             received_by=user.fullname)
-            item_site.item_status_id=status_to_be_collected.id
+            item_site.item_status_id=detail_entry_status.id
             item_site.save()
 
 
@@ -1058,7 +1116,7 @@ class InsertItemApi(View):
                 'message': 'Database Problem'
                 }
             return HttpResponse(json.dumps(response),
-                                            content_type='application/json')
+                            content_type='application/json')
             
 
         # return response
@@ -1066,18 +1124,19 @@ class InsertItemApi(View):
             'success': 0
             }
         return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
+                    content_type='application/json')
 
 
     # get available awb that has no status in it
-    def get_awb_number(self):
+    def get_awb_number(self, status_id):
         awb_number = None
         try:
             awb_number = AWB.objects.filter(status__isnull=True).order_by('pk')[0]
             # update status of awb to SD
-            awb_number.status_id = detail_entry_status.id
+            awb_number.status_id = status_id
             awb_number.save()
         except:
+            print traceback.format_exc()
             return None
         return awb_number
 
@@ -1085,84 +1144,81 @@ class InsertItemApi(View):
         awb.status = None
         awb.save()
 
-#    def generate_random(self):
-#        number = ''
-#        for i in range(8):
-#            number += random.choice(string.digits)
-#        return number
 
-#    def generate_awb(self, site_id):
-#        return 'LOGH' + str(site_id).zfill(4) + self.generate_random()
-
-
-# required params: user_id, transportation_id, cost
-class RunsheetApi(View):
+#user_id, transportation_id, cost, destination_site_id
+class RunsheetCreateApi(View):
 
     def post(self, request):
-        staff = CustomUser.objects.get(pk=request.POST['user_id'])
-
-        # TODO still hardcode
-        status_to_be_collected = ItemStatus.objects.get(name__iexact='TO BE COLLECTED')
-        
-        
-        # retrieve same city agent
-        agent_qs = Site.objects.filter(Q(city_id=staff.site.city_id) &
-                        (Q(type__name='Agen') | Q(type__name='Sub Agen')))
-         
-        
-        # no agent to collect
-        if not agent_qs:
+        if not request.POST['user_id'] \
+                or not request.POST['destination_site_id'] \
+                or not request.POST['transportation_id'] : 
             response = {
-                'success': -1,
-                'message': 'No agent to collect'
-                
-            }
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
             return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
+                        content_type='application/json')
 
-        #example : {'agent_id':'query_set_item_to_be_collect'}
-        agent_items = {}
-        for agent in agent_qs.iterator():
-            item_to_collect = ItemSite.objects.filter(
-                Q(item_status_id=status_to_be_collected.id) &
-                Q(site_id=agent.id))
-            if not item_to_collect:
-                continue
-            agent_items.update({agent.id : item_to_collect})
-
-        # no item to collect
-        if not agent_items:
-            response = {
-                'success': -1,
-                'message': 'No item to collect'
-                
-            }
-            return HttpResponse(json.dumps(response),
-                                        content_type='application/json')
+        user = CustomUser.objects.get(pk=request.POST['user_id'])
 
         # TODO need mechanism to check whether runsheet has been generated 
         #       to avoid staff to generate DOUBLE runsheet
 
-        # generate for every agent / site
-        for site_id, item_qs in agent_items.items():
+       
+        try:
             # create runsheet
             runsheet = Shipment(
-                        cost=request.POST['cost'],
-                        transportation_id=request.POST['transportation_id'])
-            runsheet.origin_site_id = site_id
-            runsheet.destination_site = staff.site
+                cost=request.POST['cost'],
+                transportation_id=request.POST['transportation_id'])
+            runsheet.origin_site_id = user.site.id
+            runsheet.destination_site_id = request.POST['destination_site_id']
             runsheet.save()
-        
-            # TODO mechanism to generate bag id
-            bag_id = 'BAG0001'
+        except:
+            print traceback.format_exc()
+            response = {
+                'success': -1,
+                'message': 'Database Problem'
+                }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
 
-            # insert item_shipment
-            for item_site in item_qs.iterator():
-                ItemShipment.objects.create(
-                        item_id=item_site.item_id,
-                        shipment=runsheet,
-                        bag_id=bag_id,
-                        item_shipment_status_id=status_to_be_collected)
+        
+           
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                content_type='application/json')
+
+
+#user_id, shipment_id, smu
+class RunsheetUpdateApi(View):
+    def post(self, request):
+        if not request.POST['user_id'] \
+                or not request.POST['smu'] \
+                or not request.POST['shipment_id'] : 
+            response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        user = CustomUser.objects.get(pk=request.POST['user_id'])
+        
+        try:
+            # update smu
+            Shipment.objects.filter(pk=request.POST['shipment_id']) \
+                    .update(smu=request.POST['smu'])
+        except:
+            print traceback.format_exc()
+            response = {
+                'success': -1,
+                'message': 'Database Problem'
+                }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
 
         # return response
         response = {
@@ -1172,59 +1228,46 @@ class RunsheetApi(View):
                 content_type='application/json')
 
 
-class ProcessingApi(View):
+#user_id, status_code, awb, information
+class ItemIncidentApi(View):
 
-    def post(self, request):
-        staff = CustomUser.objects.get(pk=request.POST['user_id'])
-        manifested_status = ItemStatus.objects.get(name__iexact='MANIFESTED')
-        processed_status = ItemStatus.objects.get(name__iexact='ON PROCESS')
-        status_to_be_collected = ItemStatus.objects.get(name__iexact='TO BE COLLECTED')
+     def post(self, request):
+        if not request.POST['user_id'] \
+                or not request.POST['status_code'] \
+                or not request.POST['awb'] \
+                or not request.POST['information'] : 
+            response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
 
-
-        item = None
+        user = None
         try:
-            item = Item.objects.get(awb__iexact=request.POST['awb'])
+            user = CustomUser.objects.get(pk=request.POST['user_id'])
         except:
             response = {
                     'success': -1,
-                    'message': "Item not found"
+                    'message': "Parameter is no valid"
                     }
             return HttpResponse(json.dumps(response),
-                                content_type='application/json')
+                        content_type='application/json')
 
         try:
-            # create runsheet
-            runsheet = Shipment(
-                        cost=request.POST['cost'],
-                        transportation_id=request.POST['transportation_id'])
-            runsheet.origin_site_id = staff.site.id
-            runsheet.destination_site_id = item.receiver_city_id
-            runsheet.save()
+            status = ItemStatus.objects.get(code=request.POST['status_code'])
+            awb = AWB.objects.get(number=request.POST['awb'])
+            awb.status_id = status.id
+            awb.save()
             
-            # TODO mechanism to generate bag id
-            bag_id = 'BAG0001'
+            Incident(awb_id=awb.id, 
+                    site_id=user.site.id,
+                    status_id=status.id,
+                    information=request.POST['information']).save()
 
-            # insert item_shipment
-            ItemShipment.objects.create(
-                    item_id=item.id,
-                    shipment=runsheet,
-                    bag_id=bag_id,
-                    item_shipment_status_id=status_to_be_collected)
-
-            # update status of item site
-            item_site = ItemSite.objects.get(Q(item_id=item.id) &
-                            Q(site_id=staff.site.id ) &
-                            Q(item_status_id=manifested_status))
-
-            item_site.item_status_id=processed_status
-            item_site.save()
-
-            # update history
-            history = History(
-                        item_id=item.id,
-                        status=processed_status.name)
-            history.save()
-
+            History(awb_id=awb.id,
+                    status=status.name).save()
+                    
         except:
             print traceback.format_exc()
             response = {
@@ -1240,3 +1283,311 @@ class ProcessingApi(View):
             }
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
+
+
+#user_id, awb_list, courier_id
+class ItemDeliveryCreateApi(View):
+    def post(self, request):
+        if not request.POST['user_id'] \
+                or not request.POST.getlist('awb_list'):
+            response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        if not request.POST['courier_id'] \
+            and not request.POST['forwarder_id']:
+            response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+        
+        user = None
+        try:
+            user = CustomUser.objects.get(pk=request.POST['user_id'])
+        except:
+            response = {
+                    'success': -1,
+                    'message': "Parameter is no valid"
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        is_courier = True
+        if not request.POST['courier_id']:
+            is_courier = False
+
+        awb_qs = AWB.objects.filter( \
+                    number__in=request.POST.getlist('awb_list'))
+
+        awb_id_list = []
+        for awb in list(awb_qs):
+            awb_id_list.append(awb.id)
+
+        try:
+            status = None
+            
+            history_list = []
+            delivery_list = []
+            if is_courier:
+                status = ItemStatus.objects.get(code='WC')
+                AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=status.id)
+
+                for awb_id in awb_id_list:
+                    delivery_list.append(Delivery(
+                                        awb_id=awb_id,
+                                        courier_id=request.POST['courier_id'],
+                                        status_id=status.id,
+                                        site_id=user.site.id))
+                    history_list.append(History(
+                                        awb_id=awb_id,
+                                        status = status.name))
+
+                                
+            else:
+                status = ItemStatus.objects.get(code='FW')
+                AWB.objects.filter(pk__in=awb_id_list) \
+                    .update(status_id=status.id)
+
+                for awb_id in awb_id_list:
+                    delivery_list.append(Delivery(
+                                        awb_id=awb_id,
+                                        forwarder_id=request.POST['forwarder_id'],
+                                        status_id=status.id,
+                                        site_id=user.site.id))
+                    history_list.append(History(
+                                        awb_id=awb_id,
+                                        status = status.name))
+
+            ItemStatus.objects.filter(
+                                site_id=user.site.id,
+                                awb_id__in=awb_id_list).update(
+                                status=status.id)
+            Delivery.objects.bulk_create(delivery_list)
+            History.objects.bulk_create(history_list)
+
+
+        except:
+            print traceback.format_exc()
+            response = {
+                    'success': -1,
+                    'message': "Database problem"
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                content_type='application/json')
+
+
+# user_id, courier_id | forwarder_id, awb, status_code,
+# receiver_name, receive_date
+class ItemDeliveryUpdateApi(View):
+    def post(self, request):
+        if not request.POST['user_id'] \
+                or not request.POST.getlist('awb'):
+            response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        if not request.POST['courier_id'] \
+            and not request.POST['forwarder_id']:
+            response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+        
+        user = None
+        delivery_status = None
+        try:
+            user = CustomUser.objects.get(pk=request.POST['user_id'])
+            delivery_status = ItemStatus.objects.get( 
+                                        code=request.POST['status_code'])
+        except:
+            response = {
+                    'success': -1,
+                    'message': "Parameter is no valid"
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        is_courier = True
+        if not request.POST['courier_id']:
+            is_courier = False
+
+        
+
+        try:
+            awb = AWB.objects.get(number=request.POST['awb'])
+            if is_courier:
+                status = ItemStatus.objects.get(code='WC')
+                Delivery.objects.filter(site_id=user.site.id, 
+                                        awb_id=awb.id,
+                                        status_id=status.id,
+                                        courier_id=request.POST['courier_id']) \
+                                .update(status_id=delivery_status.id,
+                                        receiver_name=request.POST['receiver_name'],
+                                        receive_date=self.convert_to_datetime(
+                                            request.POST['receive_date']))
+                awb.status_id=delivery_status.id
+                awb.save()
+                ItemSite.objects.filter(site_id=user.site.id,
+                                            item_status_id=status.id,
+                                            awb_id=awb.id) \
+                                .update(item_status_id=delivery_status.id)
+                
+                
+            else:
+                status = ItemStatus.objects.get(code='FW')
+                Delivery.objects.filter(site_id=user.site.id, 
+                                        awb_id=awb.id,
+                                        status_id=status.id,
+                                        courier_id=request.POST['forwarder_id'])\
+                                .update(status_id=delivery_status.id,
+                                        receiver_name=request.POST['receiver_name'],
+                                        receive_date=self.convert_to_datetime(
+                                            request.POST['receive_date']))
+                awb.status_id=delivery_status.id
+                awb.save()
+                ItemSite.objects.filter(site_id=user.site.id,
+                                            item_status_id=status.id,
+                                            awb_id=awb.id) \
+                                    .update(item_status_id=delivery_status.id)
+
+            History(awb_id=awb.id, 
+                        status=delivery_status.name \
+                                + ' [' + request.POST['receiver_name'] + ' at ' \
+                                + request.POST['receive_date'] + ']').save()
+        except:
+            print traceback.format_exc()
+            response = {
+                    'success': -1,
+                    'message': "Database problem"
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                content_type='application/json')
+       
+
+
+    # format date in string: Sep 1 2016  1:33PM
+    def convert_to_datetime(self, date_in_string):
+        return datetime.strptime(date_in_string, '%b %d %Y %I:%M%p')
+        
+# user_id, courier_id | forwarder_id, awb, status_code
+class ItemDeliveryUpdateFailApi(View):
+    def post(self, request):
+        if not request.POST['user_id'] \
+                or not request.POST.getlist('awb'):
+            response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        if not request.POST['courier_id'] \
+            and not request.POST['forwarder_id']:
+            response = {
+                        'success': -1,
+                        'message': "Parameters are not complete",
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+        
+        user = None
+        delivery_status = None
+        try:
+            user = CustomUser.objects.get(pk=request.POST['user_id'])
+            delivery_status = ItemStatus.objects.get( 
+                                        code=request.POST['status_code'])
+        except:
+            response = {
+                    'success': -1,
+                    'message': "Parameter is no valid"
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        is_courier = True
+        if not request.POST['courier_id']:
+            is_courier = False
+
+        
+
+        try:
+            awb = AWB.objects.get(number=request.POST['awb'])
+            if is_courier:
+                status = ItemStatus.objects.get(code='WC')
+                Delivery.objects.filter(site_id=user.site.id, 
+                                        awb_id=awb.id,
+                                        status_id=status.id,
+                                        courier_id=request.POST['courier_id']) \
+                                .update(status_id=delivery_status.id)
+                awb.status_id=delivery_status.id
+                awb.save()
+                ItemSite.objects.filter(site_id=user.site.id,
+                                            item_status_id=status.id,
+                                            awb_id=awb.id) \
+                                .update(item_status_id=delivery_status.id)
+                
+                
+            else:
+                status = ItemStatus.objects.get(code='FW')
+                Delivery.objects.filter(site_id=user.site.id, 
+                                        awb_id=awb.id,
+                                        status_id=status.id,
+                                        courier_id=request.POST['forwarder_id'])\
+                                .update(status_id=delivery_status.id)
+                awb.status_id=delivery_status.id
+                awb.save()
+                ItemSite.objects.filter(site_id=user.site.id,
+                                            item_status_id=status.id,
+                                            awb_id=awb.id) \
+                                    .update(item_status_id=delivery_status.id)
+
+            History(awb_id=awb.id, 
+                        status=delivery_status.name).save()
+
+        except:
+            print traceback.format_exc()
+            response = {
+                    'success': -1,
+                    'message': "Database problem"
+                    }
+            return HttpResponse(json.dumps(response),
+                        content_type='application/json')
+
+        # return response
+        response = {
+            'success': 0
+            }
+        return HttpResponse(json.dumps(response),
+                content_type='application/json')
+       
+
+
+    # format date in string: Sep 1 2016  1:33PM
+    def convert_to_datetime(self, date_in_string):
+        return datetime.strptime(date_in_string, '%b %d %Y %I:%M%p')
+

@@ -24,16 +24,29 @@ urlpatterns = [
         name='core-manifest'),
 
     # API
-    url(r'^api/item/insert/$',api.InsertItemApi.as_view(), 
+    url(r'^api/item/insert/$',api.ItemInsertApi.as_view(), 
         name='api-item-insert'),
-    url(r'^api/runsheet/$',api.RunsheetApi.as_view(), 
-        name='api-runsheet'),
+    url(r'^api/item/incident/$',api.ItemIncidentApi.as_view(), 
+        name='api-item-incident'),
+    url(r'^api/runsheet/create/$',api.RunsheetCreateApi.as_view(), 
+        name='api-runsheet-create'),
+    url(r'^api/runsheet/update/$',api.RunsheetUpdateApi.as_view(), 
+        name='api-runsheet-update'),
     url(r'^api/outbound/$',api.OutboundApi.as_view(), 
         name='api-outbound'),
     url(r'^api/inbound/$',api.InboundApi.as_view(), 
         name='api-inbound'),
     url(r'^api/bagging/$',api.BaggingApi.as_view(), 
         name='api-bagging'),
+    url(r'^api/onprocess/$',api.ItemOnProcess.as_view(), 
+        name='api-onprocess'),
+    url(r'^api/delivery/create/$',api.ItemDeliveryCreateApi.as_view(), 
+        name='api-delivery-create'),
+    url(r'^api/delivery/update/$',api.ItemDeliveryUpdateApi.as_view(), 
+        name='api-delivery-update'),
+    url(r'^api/delivery/failupdate/$',api.ItemDeliveryUpdateFailApi.as_view(), 
+        name='api-delivery-failupdate'),
+
 
 
     # TARIFF
