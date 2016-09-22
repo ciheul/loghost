@@ -39,6 +39,7 @@ class Report:
         return x, y
 
     def generate(self, c, request):
+        print request.POST
         item = Item.objects.get(pk=request.POST['pk'])
 
         c.translate(cm, cm)

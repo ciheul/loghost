@@ -203,19 +203,25 @@
     }
 
     collections.push($('.bag-text').val());
-    console.log('data to send --> ', collections);
-    
-    // $.ajax({
-    //   'url': "{% url 'api-inbound' %}", 
-    //   'method': "POST",
-    //   'data': {
-    //     'awbs:' collections
-    //   },
 
-    // }).done(function(response) {
-     // resetTable();
-    //   collections = [];
-    // });
+    console.log('data to send --> ', collections);
+    console.log('bag to send --> ', $('.bag-text').val())
+    
+    $.ajax({
+      url: "{% url 'api-bagging' %}", 
+      method: "POST",
+      traditional:true,
+      dataType: 'json',
+      data: {
+        awb_list: collections,
+        user_id: {{user_id}},
+        bag_number: $('.bag-text').val()
+      },
+
+    }).done(function(response) {
+        collections = [];
+        resetTable();
+    });
 
     return false;
   });

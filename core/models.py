@@ -78,6 +78,7 @@ class AWB(models.Model):
 
 class Item(models.Model):
     user = models.ForeignKey('account.CustomUser', null=True, blank=True)
+    # NOTE using foreign key, the awb can be reused
     awb = models.ForeignKey('AWB', null=True, blank=True)
     sender_name = models.CharField(max_length=50)
     sender_address = models.CharField(max_length=100)
@@ -153,6 +154,7 @@ class ItemSite(models.Model):
     received_by = models.CharField(max_length=50, null=True, blank=True)
     sent_at = models.DateTimeField( null=True, blank=True)
     sent_by = models.CharField(max_length=50, null=True, blank=True)
+    # NOTE for future use to reduce the number of joins
     item_status= models.ForeignKey('ItemStatus', null=True, blank=True)
     description = models.CharField(max_length=100, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)

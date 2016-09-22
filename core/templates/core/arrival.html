@@ -162,9 +162,9 @@
     var t = $('#arrival-table').DataTable();
 
     t.row.add( [
-      $('.awb-text').val(),
-      'AF - Arrival Sorter',
-      value,
+        $('.awb-text').val(),
+        'AF - Arrive At Facility',
+        value,
     ] ).draw( true );
     
     // adding to new Collection
@@ -204,18 +204,20 @@
 
     collections.push($('.bag-text').val());
     console.log('data to send --> ', collections);
+    $.ajax({
+        url: "{% url 'api-inbound' %}", 
+        method: "POST",
+        dataType: 'json',
+        traditional: true,
+        data: {
+            user_id:{{user_id}},
+            awb_list: collections
+        },
+    }).done(function(response) {
+        resetTable();
+        collections = [];
+    });
     
-    // $.ajax({
-    //   'url': "{% url 'api-inbound' %}", 
-    //   'method': "POST",
-    //   'data': {
-    //     'awbs:' collections
-    //   },
-
-    // }).done(function(response) {
-          // resetTable();
-    //   collections = [];
-    // });
 
     return false;
   });

@@ -132,11 +132,19 @@
     // var cour = $('#courier').dropdown('get value');
     var cour = $('.ui.fluid.dropdown.selection').dropdown('get value');
 
-    if ($('.bag-text').val() === '' && cour === "") {
+    console.log(cour);
+    
+    if ($('.bag-text').val() === '') {
       error_msg['bag'] = true;
-      error_msg['cour'] = true;
       setErrorView(error_msg);
       console.log('empty awb value');
+      return false;
+    }
+
+    if (cour === "") {
+      error_msg['cour'] = true;
+      setErrorView(error_msg);
+      console.log('empty cour value');
       return false;
     }
 
@@ -213,7 +221,7 @@
 
   function resetErrorView() {
     $('.bag-text').parent().removeClass('error');
-    $('#courier').parent().parent().removeClass('error');
+    $('#courier').parent().removeClass('error');
     $('.error-msg').remove();
   }
 
