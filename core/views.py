@@ -5,7 +5,8 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from core.models import City, Service, Site, SiteType
+from core.models import City, Service, Site, SiteType, GoodType, PaymentType
+from core.models import Transportation 
 
 from report.site import SiteReport
 
@@ -41,7 +42,6 @@ class AgentManagementView(StaffView):
         }
         return render(request, 'core/agent-management.html', context)
 
-
 class UserManagementView(StaffView):
     def get(self, request, site_pk):
         try:
@@ -69,3 +69,46 @@ class ReportView(StaffView):
         report = SiteReport()
         response = report.print_blank(request)
         return response
+
+class PickUpManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'pickup_active': 'active',
+        }
+        return render(request, 'core/pickup-management.html', context)
+
+class ManualScanManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'manualscan_active': 'active'
+        }
+        return render(request, 'core/manualscan-management.html', context)
+
+class BaggingManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'bagging_active': 'active'
+        }
+        return render(request, 'core/bagging-management.html', context)
+
+class ConsignmentNoteManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'consignment_active': 'active',
+            'fill_active': 'active',
+            'cities': City.objects.all().order_by('name'),
+            'good_types': GoodType.objects.all(),
+            'payment_types': PaymentType.objects.all(),
+            'services': Service.objects.all(),
+        }
+        return render(request, 'core/consignment-note.html', context)
+
+class ManifestingManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'manifesting_active': 'active',
+            'transports': Transportation.objects.all().order_by('identifier'),
+            'cities': City.objects.all().order_by('name'),
+        }
+        return render(request, 'core/manifesting.html', context)
+

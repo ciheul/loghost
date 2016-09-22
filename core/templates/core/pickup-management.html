@@ -1,0 +1,66 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header" style="margin-bottom:1em">Pick Up</h1>
+
+  <table id="report" class="ui celled table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Address</th>
+        <th>City</th>
+        <th>Amount</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Dummy Name Dummy</td>
+        <td>Dummy Type</td>
+        <td>Dummy Address</td>
+        <td>Dummy City</td>
+        <td>8 Dummy</td>
+        <td><div class="mini ui blue button" data-action="print">Print</div></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div id="modal-container"></div>
+
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+  $('#report').DataTable({
+    searching: false,
+    bLengthChange: false,
+    bInfo: false,
+    {# serverSide: true, #}
+    /*ajax: {
+      url: "{% url 'api-tariff-read' %}",
+      type: 'GET'
+    },*/
+    columns: [
+      {data: 'Name', className: 'dt-left'},
+      {data: 'Type', className: 'dt-left'},
+      {data: 'Address', className: 'dt-left'},
+      {data: 'City', className: 'dt-left'},
+      {data: 'Amount', className: 'dt-left'},
+      {data: 'Action', className: 'dt-left'},
+    ],
+    columnDefs: [
+      {
+        targets: -1,  
+        render: function(data, type, row, meta) {
+          return ''
+            '<div class="mini ui blue button" data-action="print" data-pk=' + row.action + ' data-origin="' + row.origin+ '" data-destination="' + row.destination + '" data-service="' + row.service + '">Print</div>';
+        }
+      }
+    ]
+  });
+
+</script>
+{% endblock %}

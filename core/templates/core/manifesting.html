@@ -1,0 +1,272 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header ui form" style="margin-bottom:1em">
+    <div class="fields">
+      <div class="eight wide field">
+        Manifesting
+      </div>
+      <div class="eight wide field">
+        <button id="add-transport-btn"type="button" class="ui blue button right floated"><i class="shipping icon"></i> New Transportation</button>
+      </div>
+    </div>
+  </h1>
+
+  <form class="ui form" id="transportation-form">
+    <h3 class="ui dividing header">Transpostation Info</h3>
+    <div class="fields">
+      <div class="eight wide field required">
+        <label>Transportation</label>
+        <select class="ui fluid dropdown" name="transportation">
+          <option value="">Choose Transportation</option>
+          {% for transport in transports %}
+            <option value="{{ transport.id }}">{{ transport.identifier }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="eight wide field required">
+        <label>SMU</label>
+        <input type="text" name="smu" placeholder="SMU">
+      </div>
+      
+    </div>
+    
+    <div class="fields">
+      <div class="eight wide field required">
+        <label>Departed at</label>
+        <select class="ui fluid dropdown" name="origin_city">
+          <option value="">Departed At</option>
+          {% for city in cities %}
+            <option value="{{ city.pk }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="eight wide field required">
+        <label>Arrived at</label>
+        <select class="ui fluid dropdown" name="origin_city1">
+          <option value="">Arrived at</option>
+          {% for city in cities %}
+            <option value="{{ city.pk }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="ui dividing header">Additional Info</div>
+    </div>
+
+    <div class="fields">
+      <div class="eight wide field">
+        <label>Origin City Note</label>
+        <input type="text" name="destination" placeholder="Jl. Mata Air No 22">
+      </div>
+      <div class="eight wide field">
+        <label>Origin Destination Note</label>
+        <input type="text" name="destination" placeholder="Jl. Batununggal Jelita 2 No 22">
+      </div>
+      <div class="eight wide field">
+        <label>Capacity</label>
+        <input type="text" name="capacity" placeholder="1000">
+      </div>
+      <div class="eight wide field">
+        <label>Base</label>
+        <input type="text" name="base" placeholder="1000">
+      </div>
+    </div>
+
+    <div class="field">
+      
+    </div>
+
+  </form>
+
+  <!-- 
+  departed_at
+  base
+  transportation_type
+  origin_city_id
+  departed_at
+  arrived_at
+  identifier
+  operator
+  operator_phone
+  capacity
+  -->
+  
+  <div class="ui dividing header"></div>
+
+  <form class="ui form">
+    <div class="fields">
+      <div class="eight wide field">
+        <table id="report" class="ui celled table">
+          <thead>
+            <tr>
+              <th>A W B</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>DUMMYAWB</td>
+              <td><div class="mini ui blue button" data-action="update">Update</div><div class="mini ui red button" data-action="delete">Delete</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="eight wide field">
+        <table id="report2" class="ui celled table">
+          <thead>
+            <tr>
+              <th>Bagging ID</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>DUMMY BAGGING</td>
+              <td><div class="mini ui blue button" data-action="update">Update</div><div class="mini ui red button" data-action="delete">Delete</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+    </div>
+  </form>
+
+
+
+</div>
+
+<div id="modal-container"></div>
+
+
+<script type="text/template" id="add-transport-modal-template">
+  <div class="ui small modal" id="add-transport-modal">
+    <i class="close icon"></i>
+    <div class="header">Add Transport</div>
+    <div class="content add-transport-content">
+
+      <form class="ui form" id="transportation-form">
+        <h3 class="ui dividing header">Transpostation Info</h3>
+        <div class="fields">
+          <div class="eight wide field required">
+            <label>Transportation</label>
+            <select class="ui fluid dropdown" name="transportation">
+              <option value="">Choose Transportation</option>
+              {% for transport in transports %}
+                <option value="{{ transport.id }}">{{ transport.identifier }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="eight wide field required">
+            <label>SMU</label>
+            <input type="text" name="smu" placeholder="SMU">
+          </div>
+          
+        </div>
+        
+        <div class="fields">
+          <div class="eight wide field required">
+            <label>Departed at</label>
+            <select class="ui fluid dropdown" name="origin_city">
+              <option value="">Departed At</option>
+              {% for city in cities %}
+                <option value="{{ city.pk }}">{{ city.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="eight wide field required">
+            <label>Arrived at</label>
+            <select class="ui fluid dropdown" name="origin_city1">
+              <option value="">Arrived at</option>
+              {% for city in cities %}
+                <option value="{{ city.pk }}">{{ city.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="ui dividing header">Additional Info</div>
+        </div>
+
+        <div class="fields">
+          <div class="eight wide field">
+            <label>Origin City Note</label>
+            <input type="text" name="destination" placeholder="Jl. Mata Air No 22">
+          </div>
+          <div class="eight wide field">
+            <label>Origin Destination Note</label>
+            <input type="text" name="destination" placeholder="Jl. Batununggal Jelita 2 No 22">
+          </div>
+          <div class="eight wide field">
+            <label>Capacity</label>
+            <input type="text" name="capacity" placeholder="1000">
+          </div>
+          <div class="eight wide field">
+            <label>Base</label>
+            <input type="text" name="base" placeholder="1000">
+          </div>
+        </div>
+
+        <div class="field">
+          
+        </div>
+
+      </form>
+
+    </div>
+    <div class="actions">
+      <div class="ui positive deny button">OK</div>
+    </div>
+  </div>
+</script>
+  
+</script>
+
+{% endblock %}
+
+{% block javascript %}
+
+<script type="text/javascript">
+  
+  $(document).ready(function() {
+    
+    $('#report').DataTable({
+      searching: false,
+      bLengthChange: false,
+      bInfo: false,
+    });
+
+    $('#report2').DataTable({
+      searching: false,
+      bLengthChange: false,
+      bInfo: false,
+    });
+
+    $('.awb-text').focus(); 
+
+  });
+
+  var collectionsAdded = [];
+  var value = '<div class="mini ui blue button" data-action="update">Update</div><div class="mini ui red button" data-action="delete">Delete</div>';
+
+</script>
+
+<script type="text/javascript">
+  
+  $('#add-transport-btn').click(function() {
+    $('#modal-container').html($('#add-transport-modal-template').html());
+    $('#add-transport-modal').modal('show');
+    $('.ui.dropdown').dropdown();
+  });
+
+</script>
+
+{% endblock %}

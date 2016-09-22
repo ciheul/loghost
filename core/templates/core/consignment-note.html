@@ -1,0 +1,315 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main text container" style="margin-top:6em;margin-bottom:6em">
+
+  <form class="ui form" id="create-item-form">
+    <h1 class="ui header">Consignment Note</h1>
+
+    <h3 class="ui dividing header">Sender</h3>
+    <div class="fields">
+      <div class="six wide required field">
+        <label>Full Name</label>
+        <input type="text" name="sender_name" placeholder="Indra Hermanto">
+      </div>
+      <div class="ten wide required field">
+        <label>Address</label>
+        <input type="text" name="sender_address" placeholder="">
+      </div>
+    </div>
+    <div class="fields">
+      <div class="six wide field">
+        <label>Phone</label>
+        <input type="text" name="sender_phone" placeholder="0811901234, 0811-90-1234">
+      </div>
+      <div class="eight wide required field">
+        <label>City</label>
+        <select class="ui fluid dropdown" name="sender_city">
+          <option value="">Pilih salah satu kota</option>
+          {% for city in cities %}
+            <option value="{{ city.pk }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="two wide field">
+        <label>Zip Code</label>
+        <input type="text" name="sender_zip_code" placeholder="40191">
+      </div>
+    </div>
+  
+    <h3 class="ui dividing header">Receiver</h3>
+    <div class="fields">
+      <div class="six wide required field">
+        <label>Full Name</label>
+        <input type="text" name="receiver_name" placeholder="Narlia Fidelia">
+      </div>
+      <div class="ten wide required field">
+        <label>Address</label>
+        <input type="text" name="receiver_address" placeholder="">
+      </div>
+    </div>
+    <div class="fields">
+      <div class="six wide field">
+        <label>Phone</label>
+        <input type="text" name="receiver_phone" placeholder="0811901234, 0811-90-1234">
+      </div>
+      <div class="eight wide required field">
+        <label>City</label>
+        <select class="ui fluid dropdown" name="receiver_city">
+          <option value="">Pilih salah satu kota</option>
+          {% for city in cities %}
+            <option value="{{ city.pk }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="two wide field">
+        <label>Zip Code</label>
+        <input type="text" name="receiver_zip_code" placeholder="40191">
+      </div>
+    </div>
+  
+    <h3 class="ui dividing header">Shipment</h3>
+    <div class="three fields">
+      <div class="required field">
+        <label>Service</label>
+        <select class="ui fluid dropdown" name="service">
+          {% for service in services %}
+          <option value="{{ service.pk }}">{{ service.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="required field">
+        <label>Good Type</label>
+        <select class="ui fluid dropdown" name="good_type">
+          {% for good_type in good_types %}
+          <option value="{{ good_type.pk }}">{{ good_type.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="required field">
+        <label>Payment Type</label>
+        <select class="ui fluid dropdown" name="payment_type">
+          {% for payment_type in payment_types %}
+          <option value="{{ payment_type.pk }}">{{ payment_type.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  
+    <h3 class="ui dividing header">Item</h3>
+    <div class="six fields">
+      <div class="required field">
+        <label>Weight (kg)</label>
+        <input type="text" name="weight" placeholder="">
+      </div>
+      <div class="field">
+        <label>Length (cm)</label>
+        <input type="text" name="length" placeholder="">
+      </div>
+      <div class="field">
+        <label>Width (cm)</label>
+        <input type="text" name="width" placeholder="">
+      </div>
+      <div class="field">
+        <label>Height (cm)</label>
+        <input type="text" name="height" placeholder="">
+      </div>
+      <div class="field">
+        <label>Volumetric (kg)</label>
+        <input type="text" name="volumetric" placeholder="">
+      </div>
+      <div class="required field">
+        <label>Price (IDR)</label>
+        <input type="text" name="price" placeholder="">
+      </div>
+    </div>
+  
+    <h3 class="ui dividing header">Additional Information</h3>
+    <div class="fields">
+      <div class="eleven wide required field">
+        <label>Good Name</label>
+        <input type="text" name="good_name" placeholder="">
+      </div>
+      <div class="five wide field">
+        <label>Good Value</label>
+        <input type="text" name="good_value" placeholder="100000">
+      </div>
+    </div>
+    <div class="two fields">
+      <div class="field">
+        <label>Instruction</label>
+        <input type="text" name="instruction" placeholder="">
+      </div>
+      <div class="field">
+        <label>Note</label>
+        <input type="text" name="note" placeholder="">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>AWB</label>
+      <input type="text" name="awb" placeholder="awb">
+    </div>
+
+    <div class="field">
+      <label>Instruction</label>
+      <input type="text" name="instruction" placeholder="">
+    </div>
+    
+    <div class="field">
+      <label>Courier Name</label>
+      <input type="text" name="courier_name" placeholder="">
+    </div>
+    
+    <div class="two fields">
+      <div class="field">
+        <label>Date</label>
+        <input type="text" name="date" placeholder="DD-MM-YYYY">
+      </div>
+      <div class="field">
+        <label>Hour Time</label>
+        <input type="text" name="time" placeholder="HH:mm:ss">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Assurance</label>
+      <input type="text" name="assurance" placeholder="">
+    </div>
+
+    <div class="field">
+      <label>Customer Number</label>
+      <input type="text" name="customer_number" placeholder="">
+    </div>
+  
+    <div class="field">
+      <div class="ui primary right floated button submit-btn" tabindex="0"><i class="send outline icon"></i> Submit</div>
+      <div class="ui primary right floated button print-btn" tabindex="0"><i class="Print icon"></i> Print</div>
+      <div class="ui primary right floated button shipment-marking-btn" tabindex="0"><i class="shop icon"></i> Shipment Marking</div>
+    </div>
+  </form>
+
+  <div id="awb-container"></div>
+  <div id="modal-container"></div>
+  <div id="message-container"></div>
+</div>
+
+<script type="text/template" id="delete-agent-modal-template">
+  <div class="ui small modal" id="delete-agent-modal">
+    <i class="close icon"></i>
+    <div class="header">Delete Agent</div>
+    <div class="content delete-content"></div>
+    <div class="actions">
+      <div class="ui positive deny button">OK</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="awb-card-template">
+  <h3 class="ui dividing header" style="margin-top:6em">AWB</h3>
+  <div class="ui cards">
+    <div class="card">
+      <div class="content center aligned">
+        <div class="ui small statistic">
+          <div class="value"><%= awb %></div>
+          <div class="label">AWB</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="message-error-template">
+<div class="ui negative message" style="margin-top:6em">
+  <i class="close icon"></i>
+  <div class="header"><%= message %></div>
+</div>
+</script>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  $.fn.serializeObject = function()
+  {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+  };
+
+  $('.submit-btn').click(function() {
+    $('.submit-btn').attr('disabled', true);;
+    var data = $('form').serializeObject();
+    data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+    $.ajax({
+      url: "{% url 'api-item-create' %}",
+      method: 'POST',
+      data: data,
+    }).done(function(response) {
+      console.log(response);
+
+      $('#message-container').empty();
+
+      if (response.success === -1) {
+        var messageTemplateFunc = _.template($('#message-error-template').html());
+        var messageTemplate = messageTemplateFunc({ message: response.message });
+        $('#message-container').append(messageTemplate);
+
+        $('.message .close').on('click', function() {
+          $(this).closest('.message').transition('fade');
+        });
+
+        // scroll to the bottom page to show error message
+        window.scrollTo(0, document.body.scrollHeight);
+
+        return;
+      }
+
+      {# $('#create-item-form').removeClass('loading'); #}
+      // set up modal template and pass agent pk
+      var templateFunc = _.template($('#delete-agent-modal-template').html());
+      var modalTemplate = templateFunc();
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#delete-agent-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      // write content to modal
+      var content = "Consignment Note is succesfully created. The awb is <b>" + response.awb + "</b>" ;
+      $('.delete-content').append(content);
+
+      var awbTemplateFunc = _.template($('#awb-card-template').html());
+      var awbCardTemplate = awbTemplateFunc({ awb: response.awb });
+      $('#awb-container').append(awbCardTemplate);
+
+      // scroll to the bottom page to show error message
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+  });
+
+    // JUST FOR DEMO
+    $('input[name=sender_name]').attr('value', 'Indra Hermanto');
+    $('input[name=sender_address]').attr('value', 'Jalan Jenderal Sudirman No. 1');
+    {# $('select[name=sender_city] option').filter(function() { #}
+    {#   return $(this).text() === 'Jakarta'; #}
+    {# }).prop('selected', true); #}
+    $('input[name=receiver_name]').attr('value', 'Narlia Fidelia');
+    $('input[name=receiver_address]').attr('value', 'Jalan Belimbing No. 8');
+    $('input[name=weight]').attr('value', '1');
+    $('input[name=price]').attr('value', '18000');
+    $('input[name=good_name]').attr('value', 'Buku');
+</script>
+{% endblock %}
