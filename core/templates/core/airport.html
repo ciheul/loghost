@@ -6,7 +6,7 @@
   <h1 class="ui header ui form" style="margin-bottom:1em">
     <div class="fields">
       <div class="eight wide field">
-        Manifesting
+        Airport
       </div>
       <div class="eight wide field">
         <button id="add-transport-btn"type="button" class="ui blue button right floated"><i class="shipping icon"></i> New Transportation</button>
@@ -156,7 +156,12 @@
         <div class="fields">
           <div class="eight wide field required">
             <label>Transportation</label>
-            <input type="text" name="transport_name" placeholder="identifier">
+            <select class="ui fluid dropdown" name="transportation">
+              <option value="">Choose Transportation</option>
+              {% for transport in transports %}
+                <option value="{{ transport.id }}">{{ transport.identifier }}</option>
+              {% endfor %}
+            </select>
           </div>
 
           <div class="eight wide field required">
