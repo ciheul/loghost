@@ -5,7 +5,7 @@
   <h1 class="ui header ui form" style="margin-bottom:1em">
     <div class="fields">
       <div class="thirteen wide field">
-        Delivery
+        Delivery Forwarder
       </div>
 
       <div class="three wide field">
@@ -23,8 +23,8 @@
 
         <select id="courier" class="ui fluid dropdown" name="courier">
           <option value="">Choose Courier</option>
-          {% for courier in couriers %}
-            <option value="{{ courier.pk }}">{{ courier.name }}</option>
+          {% for forwarder in forwarders %}
+            <option value="{{ forwarder.pk }}">{{ forwarder.name }}</option>
           {% endfor %}
         </select>
       </div>
@@ -184,25 +184,19 @@
     }
 
     console.log('data to send --> ', collections);
-    console.log('data to send --> ',  $('#courier option:selected').val());
     
-    $.ajax({
-      url: "{% url 'api-delivery-create' %}", 
-      method: "POST",
-      traditional: true,
-      dataType: 'json',
-      data: {
-        awb_list: collections,
-        courier_id:  $('#courier option:selected').val(),
-        user_id: {{user_id}}
-      },
+    // $.ajax({
+    //   'url': "{% url 'api-inbound' %}", 
+    //   'method': "POST",
+    //   'data': {
+    //     'awbs:' collections
+    //   },
 
-    }).done(function(response) {
-          resetTable();
-      collections = [];
-      $('.ui.fluid.dropdown.selection').dropdown('clear') 
-    // or $('#courier').dropdown('get value');
-     });
+    // }).done(function(response) {
+          // resetTable();
+    //   collections = [];
+    //   $('.ui.fluid.dropdown.selection').dropdown('clear') // or $('#courier').dropdown('clear');
+    // });
 
     return false;
   });

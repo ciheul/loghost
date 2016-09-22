@@ -32,6 +32,12 @@ urlpatterns = [
         name='core-arrival-item'),
     url(r'^management/delivery/$', views.DeliveryManagementView.as_view(),
         name='core-delivery'),
+    url(r'^management/deliveryforward/$', views.DeliveryThirdPartyManagementView.as_view(),
+        name='core-delivery-third'),
+    url(r'^management/deliveryupdate/$', views.DeliveryUpdateManagementView.as_view(),
+        name='core-delivery-update'),
+    url(r'^management/inventory/$', views.InventoryManagementView.as_view(),
+        name='core-inventory'),
 
     # API
     url(r'^api/item/insert/$',api.ItemInsertApi.as_view(), 
@@ -54,8 +60,6 @@ urlpatterns = [
         name='api-delivery-create'),
     url(r'^api/delivery/update/$',api.ItemDeliveryUpdateApi.as_view(), 
         name='api-delivery-update'),
-    url(r'^api/delivery/failupdate/$',api.ItemDeliveryUpdateFailApi.as_view(), 
-        name='api-delivery-failupdate'),
 
 
 

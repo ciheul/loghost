@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header" style="margin-bottom:1em">Inventory</h1>
+
+  <table id="report" class="ui celled table">
+    <thead>
+      <tr>
+        <th>Received At</th>
+        <th>AWB</th>
+        <th>Sender</th>
+        <th>Origin</th>
+        <th>Destination</th>
+        <th>Service</th>
+        {# <th>Good Type</th> #}
+        {# <th>Price (IDR)</th> #}
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  $.fn.serializeObject = function()
+  {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+  };
+
+  // render table
+  $('#report').DataTable({
+    searching: false,
+    bLengthChange: false,
+    bInfo: false,
+    {# serverSide: true, #}
+    ajax: {
+      url: "{% url 'api-item-site' site_pk=site.pk %}",
+      type: 'GET'
+    },
+    columns: [
+      { data: 'received_at', className: 'dt-left' },
+      { data: 'awb', className: 'dt-left' },
+      { data: 'sender', className: 'dt-left' },
+      { data: 'origin', className: 'dt-left' },
+      { data: 'destination', className: 'dt-left' },
+      { data: 'service', className: 'dt-left' },
+      {# { data: 'good_type', className: 'dt-left' }, #}
+      {# { data: 'price', className: 'dt-left' }, #}
+      { data: 'status', className: 'dt-left' },
+      { data: 'action', className: 'dt-left' },
+    ],
+    columnDefs: [
+      {
+        targets: -1,
+        render: function(data, type, row, meta) {
+          return ''
+            + "<form target='_blank' method='post'>"
+            {# + '"' + {% csrf_token %} + '"' #}
+            + "  <input type='hidden' name='csrfmiddlewaretoken' value='" + Cookies.get('csrftoken')+ "'>" 
+            + "  <input type='hidden' name='pk' value='" + row.action + "'>" 
+            + "  <button class='mini ui primary button print-btn'>Print</button>"
+            + "</form>";
+        }
+      }
+    ]
+  });
+
+{# $('#report tbody').click('button', function(e) { #}
+{#   console.log('print'); #}
+{#   console.log($(e.target).data('pk')); #}
+{#   var form = $(e.target); #}
+{#   form.submit(); #}
+{# }); #}
+
+</script>
+{% endblock %}

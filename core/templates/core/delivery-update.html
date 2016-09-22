@@ -5,7 +5,7 @@
   <h1 class="ui header ui form" style="margin-bottom:1em">
     <div class="fields">
       <div class="thirteen wide field">
-        Delivery
+        Delivery Update
       </div>
 
       <div class="three wide field">
@@ -20,24 +20,40 @@
     
     <div class="fields">
       <div class="five wide field">
+        <input class="bag-text" type="text" name="awb" placeholder="AWB">
+      </div>
 
-        <select id="courier" class="ui fluid dropdown" name="courier">
-          <option value="">Choose Courier</option>
-          {% for courier in couriers %}
-            <option value="{{ courier.pk }}">{{ courier.name }}</option>
+      <div class="five wide field">
+
+        <select id="status" class="ui fluid dropdown" name="status">
+          <option value="">Choose Status</option>
+          {% for stats in status %}
+            <option value="{{ stats.id }}">{{ stats.code }} - {{ stats.name }}</option>
           {% endfor %}
         </select>
       </div>
 
-      <div class="five wide field">
-        <input class="bag-text" type="text" name="awb" placeholder="AWB">
-      </div>
-      
       <div class="two wide field">
         <button class="ui button blue" type="submit"><i class="shopping basket icon"></i> Submit</button>
       </div>
 
     </div>
+
+    <div class="fields" id="delivered-panel" style="disply:none;">
+      <div class="five wide field">
+        <input id="reciever_name" type="text" name="reciever_name" placeholder="reciever name">
+      </div>
+
+      <div class="five wide field">
+        <input id="date" type="date" name="date">
+      </div>
+
+      <div class="two wide field">
+
+      </div>
+        
+    </div>
+  
   </form>
  
   <table id="arrival-table" class="ui celled table">
@@ -82,6 +98,9 @@
 {% endblock %}
 
 {% block javascript %}
+<script type="text/javascript">
+  $('#delivered-panel').hide();
+</script>
 
 <script type="text/javascript">
   var collections = [];
@@ -125,32 +144,58 @@
 </script>
 
 <script type="text/javascript">
+  var delivered = ['SC', 'OK'];
+  var cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+  var cour_select = cour_text.split(' ', 1)[0];
+  
+  $('.ui.dropdown').on('change', function() {
+    cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+    cour_select = cour_text.split(' ', 1)[0];
+    $('#delivered-panel').hide();
+    if(jQuery.inArray(cour_select, delivered) !== -1) {
+      console.log('trueh', cour_select, delivered, cour_text);
+      $('#delivered-panel').show();
+      return;
+    }
+
+  });
+
   $('#submit-bag-form').submit(function() {
     resetErrorView();
     
     var data = $('#submit-awb-form').serializeObject();
-    // var cour = $('#courier').dropdown('get value');
     var cour = $('.ui.fluid.dropdown.selection').dropdown('get value');
-
+    var errCounter = 0;
     console.log(cour);
-    
+
     if ($('.bag-text').val() === '') {
       error_msg['bag'] = true;
-      setErrorView(error_msg);
-      console.log('empty awb value');
-      return false;
+      errCounter++;
+    }
+
+    if ($('#date').val() === '') {
+      error_msg['date'] = true;
+      errCounter++;
+    }
+
+    if ($('#reciever_name').val() === '') {
+      error_msg['reciever_name'] = true;
+      errCounter++;
     }
 
     if (cour === "") {
       error_msg['cour'] = true;
+      errCounter++;
+    }
+
+    if (errCounter > 0) {
       setErrorView(error_msg);
-      console.log('empty cour value');
       return false;
     }
 
     data.csrfmiddlewaretoken = Cookies.get('csrftoken');
 
-    console.log('been submitted');
+    console.log('been submitted', data);
     
     var t = $('#arrival-table').DataTable();
 
@@ -160,10 +205,31 @@
       value,
     ] ).draw( true );
     
+    cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+    cour_select = cour_text.split(' ', 1)[0];
+
+    var dataPushed = {};
+
+    dataPushed = {
+      awb: $('.bag-text').val(),
+      status: cour_select
+    };
+
+    if(jQuery.inArray(cour_select, delivered) !== -1) {
+      dataPushed = {
+        awb: $('.bag-text').val(),
+        status: cour_select,
+        reciever_name: $('#reciever_name').val(),
+        date: $('#date').val()
+      };
+    }
+
     // adding to new Collection
-    collections.push($('.bag-text').val());
+    collections.push(dataPushed);
 
     $('.bag-text').val('');
+    $('#date').val('');
+    $('#reciever_name').val('');
     $('.bag-text').focus(); 
 
     console.log('submit-bag-form', data);
@@ -184,25 +250,19 @@
     }
 
     console.log('data to send --> ', collections);
-    console.log('data to send --> ',  $('#courier option:selected').val());
     
-    $.ajax({
-      url: "{% url 'api-delivery-create' %}", 
-      method: "POST",
-      traditional: true,
-      dataType: 'json',
-      data: {
-        awb_list: collections,
-        courier_id:  $('#courier option:selected').val(),
-        user_id: {{user_id}}
-      },
+    // $.ajax({
+    //   'url': "{% url 'api-inbound' %}", 
+    //   'method': "POST",
+    //   'data': {
+    //     'awbs:' collections
+    //   },
 
-    }).done(function(response) {
-          resetTable();
-      collections = [];
-      $('.ui.fluid.dropdown.selection').dropdown('clear') 
-    // or $('#courier').dropdown('get value');
-     });
+    // }).done(function(response) {
+          // resetTable();
+    //   collections = [];
+    //   $('.ui.fluid.dropdown.selection').dropdown('clear') // or $('#status').dropdown('clear');
+    // });
 
     return false;
   });
@@ -220,14 +280,27 @@
     }
 
     if (error.cour) {
-      $('#courier').parent().addClass('error');
-      $('#courier').parent().parent().append(err_template);
+      $('#status').parent().addClass('error');
+      $('#status').parent().parent().append(err_template);
     }
+
+    if (error.date) {
+      $('#date').parent().addClass('error');
+      console.log(';set');
+    }
+
+    if (error.reciever_name) {
+      $('#reciever_name').parent().addClass('error');
+      console.log(';set');
+    }
+
   }
 
   function resetErrorView() {
     $('.bag-text').parent().removeClass('error');
-    $('#courier').parent().removeClass('error');
+    $('#date').parent().removeClass('error');
+    $('#reciever_name').parent().removeClass('error');
+    $('#status').parent().removeClass('error');
     $('.error-msg').remove();
   }
 
