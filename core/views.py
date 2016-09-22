@@ -106,7 +106,6 @@ class ArrivalManagementView(StaffView):
         context = {
             'arrival_active': 'active',
             'user_id': request.user.id,
-            'status': ItemStatus.objects.get(id=3)
         }
         return render(request, 'core/arrival.html', context)
 
@@ -128,7 +127,8 @@ class ManifestingManagementView(StaffView):
             'manifesting_active': 'active',
             'transports': Transportation.objects.all().order_by('identifier'),
             'cities': City.objects.all().order_by('name'),
-            'transport_type': TransportationType.objects.all().order_by('name')
+            'transport_type': TransportationType.objects.all().order_by('name'),
+            'user_id': request.user.id,
         }
         return render(request, 'core/manifesting.html', context)
 
@@ -145,14 +145,16 @@ class AirportManagementView(StaffView):
 class ArrivalBagManagementView(StaffView):
     def get(self, request):
         context = {
-            'arrival_bag_active': 'active'
+            'arrival_bag_active': 'active',
+            'user_id': request.user.id,
         }
         return render(request, 'core/arrival-bag.html', context)
 
 class ArrivalItemManagementView(StaffView):
     def get(self, request):
         context = {
-            'arrival_item_active': 'active'
+            'arrival_item_active': 'active',
+            'user_id': request.user.id
         }
         return render(request, 'core/arrival-item.html', context)
 

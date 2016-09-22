@@ -143,7 +143,7 @@ class History(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __unicode__(self):
-        return self.item.awb + ': ' + self.status
+        return self.status
 
 
 class ItemSite(models.Model):

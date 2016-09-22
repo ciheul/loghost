@@ -20,7 +20,7 @@
     <div class="fields">
       <div class="eight wide field required">
         <label>Transportation</label>
-        <select class="ui fluid dropdown" name="transportation">
+        <select class="ui fluid dropdown" id="transportation" name="transportation">
           <option value="">Choose Transportation</option>
           {% for transport in transports %}
             <option value="{{ transport.id }}">{{ transport.identifier }}</option>
@@ -47,7 +47,7 @@
       </div>
       <div class="eight wide field required">
         <label>Destination City</label>
-        <select class="ui fluid dropdown" name="destination_city">
+        <select class="ui fluid dropdown" id="destination" name="destination_city">
           <option value="">Destination City</option>
           {% for city in cities %}
             <option value="{{ city.pk }}">{{ city.name }}</option>
@@ -418,19 +418,29 @@
     data.awbs = awbCollection;
     data.bags = bagCollection;
     console.log('send ajax here', data);
-    
-    // $.ajax({
-      // 
-    // }).done(function(response) {
-
-      // if (response.success === -1) {
-      //   console.log('error inputs', response);
-      //   return false;
-      // }
-
-      // awbCollection = [];
-      // bagCollection = []; 
-    // });
+    console.log("shipment_id:" , $('#transportation option:selected').val());
+    console.log("collections:", data.awbs);
+    $.ajax({
+        url: "{% url 'api-outbound' %}",
+        method: "POST",
+        dataType: 'json',
+        traditional: true,
+        data: {
+            user_id: {{ user_id }},
+            bag_id_list: data.bags,
+            awb_list: data.awbs,
+            shipment_id: $('#transportation option:selected').val(),
+            destination_id: $('#destination option:selected').val()    
+        },    
+       
+    }).done(function(response) {
+        if (response.success === -1) {
+            console.log('error inputs', response);
+            return false;
+        };
+        awbCollection = [];
+        bagCollection = []; 
+    });
     
     return false;
   });
