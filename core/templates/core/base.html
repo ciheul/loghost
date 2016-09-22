@@ -27,15 +27,21 @@
           
           <span class='nav-point'>Shipping</span><i class="dropdown icon"></i>
           <div class="menu transition hidden" tabindex="-1">
-            <div class="{{ manualscan_active }} item">
+            <!-- <div class="{{ manualscan_active }} item">
               <a class="" href="{% url 'core-manualscan' %}">Manual Scan</a>
             </div>
-            <div class="divider"></div>
+            <div class="divider"></div> -->
             <div class="header">
               Shipping
             </div>
             <div class="{{ arrival_active }} item">
               <a class="" href="{% url 'core-arrival' %}">Arrival</a>
+            </div>
+            <div class="{{ arrival_bag_active }} item">
+              <a class="" href="{% url 'core-arrival-bag' %}">Arrival Bag</a>
+            </div>
+            <div class="{{ arrival_item_active }} item">
+              <a class="" href="{% url 'core-arrival-item' %}">Arrival Item</a>
             </div>
             <div class="{{ bagging_active }} item">
               <a class="" href="{% url 'core-bagging' %}">Bagging</a>
@@ -49,6 +55,13 @@
             </div>
             <div class="{{ airport_active }} item">
               <a class="" href="{% url 'core-airport' %}">Airport</a>
+            </div>
+            <div class="divider"></div>
+            <div class="header">
+              Delivery
+            </div>
+            <div class="{{ delivery_active }} item">
+              <a class="" href="{% url 'core-delivery' %}">Delivery</a>
             </div>
           </div>
           
