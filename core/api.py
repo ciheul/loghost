@@ -619,7 +619,8 @@ class ItemCreateApi(View):
         awb_number = None
         try:
             # TODO perhaps this line sucks memory a lot
-            awb_number = AWB.objects.filter(status__isnull=True).order_by('pk')[0]
+            awb_number = AWB.objects.filter(status__isnull=True) \
+                .order_by('pk')[0]
             # update status of awb to SD
             awb_number.status_id = status_id
             awb_number.save()
@@ -644,8 +645,11 @@ class ItemTrackApi(View):
                                 content_type='application/json') 
 
         try:
-            item = Item.objects.get(awb=request.GET['awb'])
-            statuses = History.objects.filter(item=item).order_by('created_at')
+            item = Item.objects.get(awb__number=request.GET['awb'])
+            # item = Item.objects.get(awb_id=request.GET['awb'])
+            statuses = History.objects.filter(awb__number=request.GET['awb']) \
+                .order_by('created_at')
+            # statuses = History.objects.filter(item=item).order_by('created_at')
         except History.DoesNotExist:
             response = {
                 'success': -1,
@@ -664,7 +668,7 @@ class ItemTrackApi(View):
 
         response = {
             'success': 0,
-            'awb': item.awb,
+            'awb': request.GET['awb'],
             'service': item.tariff.service.name,
             'created_at': item.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'sender_city_name': item.sender_city.name,
@@ -684,17 +688,18 @@ class ItemSiteApi(View):
         data = list()
         item_sites = ItemSite.objects.filter(site_id=site_pk)
         for item_site in item_sites:
+            # NOTE this line satisfies when AWB is not reusable
+            item = Item.objects.filter(awb=item_site.awb).order_by('-id')[0]
             d = {
                 'received_at':
                     item_site.received_at.strftime('%Y-%m-%d %H:%M:%S'),
-                'awb': item_site.item.awb,
-                'rack_id': item_site.rack_id,
-                'sender': item_site.item.sender_name,
-                'origin': item_site.item.sender_city.name,
-                'destination': item_site.item.receiver_city.name,
-                'service': item_site.item.tariff.service.name,
-                'status': item_site.item_status.name,
-                'action': item_site.item.pk,
+                'awb': item_site.awb.number,
+                'sender': item.sender_name,
+                'origin': item.sender_city.name,
+                'destination': item.receiver_city.name,
+                'service': item.tariff.service.name,
+                'status': item.awb.status.name,
+                'action': item.pk,
             }
             data.append(d)
 
@@ -1622,13 +1627,21 @@ class ItemDeliveryUpdateFailApi(View):
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
 
-class ReportSiteApi(View):
-    def post(self, request):
-        report = SiteReport()
-        response = report.print_blank(request)
-        return HttpResponse(json.dumps(response), content_type='application/pdf')
+class PickUpReadApi(View):
+    def get(self, request):
+        agents = Site.objects.all()
+        data = list()
+        for agent in agents:
+            items = ItemSite.objects.filter(site=agent.id)
+            t = {
+                'name': agent.name,
+                'type': agent.type.name,
+                'address': agent.address,
+                'city': agent.city.name,
+                'amount':len(items),
+            }
+            data.append(t)
 
-    # format date in string: Sep 1 2016  1:33PM
-    def convert_to_datetime(self, date_in_string):
-        return datetime.strptime(date_in_string, '%b %d %Y %I:%M%p')
+        response = { 'success':0, 'data': data}
+        return HttpResponse(json.dumps(response), content_type='application/json')
 

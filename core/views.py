@@ -5,8 +5,8 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from core.models import City, Service, Site, SiteType, GoodType, PaymentType
-from core.models import Transportation 
+from core.models import City, Service, Site, ItemSite, SiteType, GoodType, PaymentType
+from core.models import Transportation, TransportationType 
 
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -71,8 +71,19 @@ class ReportView(StaffView):
 
 class PickUpManagementView(StaffView):
     def get(self, request):
+        agents = Site.objects.all()
+        data = list()
+        for agent in agents:
+            items = ItemSite.objects.filter(site=agent.id)
+            t = {
+                    'dataagent' : agent,
+                    'amount' : len(items),
+            }
+            data.append(t)
+        
         context = {
             'pickup_active': 'active',
+            'data': data,
         }
         return render(request, 'core/pickup-management.html', context)
 
@@ -108,6 +119,7 @@ class ManifestingManagementView(StaffView):
             'manifesting_active': 'active',
             'transports': Transportation.objects.all().order_by('identifier'),
             'cities': City.objects.all().order_by('name'),
+            'transporttype': TransportationType.objects.all().order_by('name')
         }
         return render(request, 'core/manifesting.html', context)
 

@@ -158,8 +158,8 @@
             <label>Transportation</label>
             <select class="ui fluid dropdown" name="transportation">
               <option value="">Choose Transportation</option>
-              {% for transport in transports %}
-                <option value="{{ transport.id }}">{{ transport.identifier }}</option>
+              {% for transport in transporttype %}
+                <option value="{{ transport.id }}">{{ transport.name }}</option>
               {% endfor %}
             </select>
           </div>
