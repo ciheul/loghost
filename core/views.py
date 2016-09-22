@@ -7,6 +7,7 @@ from django.views.generic import View
 
 from core.models import City, Service, Site, SiteType
 
+from report.site import SiteReport
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -58,3 +59,13 @@ class UserManagementView(StaffView):
             'site_name': '[%s] %s' % (site.type, site.name)
         }
         return render(request, 'core/user-management.html', context)
+
+class ReportView(StaffView):
+    def get(self, request):
+        context = { 'report_active': 'active', 'site': request.user.site }
+        return render(request, 'agent/inventory.html', context)
+
+    def post(self, request):
+        report = SiteReport()
+        response = report.print_blank(request)
+        return response

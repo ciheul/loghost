@@ -10,4 +10,8 @@ urlpatterns = [
     url(r'^tariff/$', views.TariffView.as_view(), name='ag-tariff'),
     url(r'^report/$', views.ReportView.as_view(), name='ag-report'),
     url(r'^profile/$', views.ProfileView.as_view(), name='ag-profile'),
+    url(r'^new/report/$', views.NewReportView.as_view(), name='ag-newreport'),
+    url(r'^blank/report/$', views.BlankReportView.as_view(), name='ag-blank'),
+    url(r'^delivery/report/$', views.DeliveryReportView.as_view(), name='ag-delivery'),
+    url(r'^manifest/report/$', views.ManifestReportView.as_view(), name='ag-manifest'),
 ]

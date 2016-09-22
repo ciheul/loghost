@@ -15,6 +15,8 @@ from core.logics import generate_awb
 
 import traceback, random, string
 
+from report.site import SiteReport
+
 class TariffCreateApi(View):
     def post(self, request):
         if not request.POST['origin'] \
@@ -1000,9 +1002,9 @@ class InsertItemApi(View):
         location = Site.objects.get(pk=user.site_id)
         # TODO still hardcode
         detail_entry_status = ItemStatus.objects.get(code__exact='SD')
-
         
-        awb = self.get_awb_number()
+        awb = self.get_awb_number(detail_entry_status.id)
+        
         try:
             if awb is None:
                 response = {
@@ -1039,7 +1041,7 @@ class InsertItemApi(View):
                             site_id=location.id,
                             received_at=timezone.now(),
                             received_by=user.fullname)
-            item_site.item_status_id=status_to_be_collected.id
+            item_site.item_status_id=detail_entry_status.id
             item_site.save()
 
 
@@ -1070,12 +1072,12 @@ class InsertItemApi(View):
 
 
     # get available awb that has no status in it
-    def get_awb_number(self):
+    def get_awb_number(self, status_id):
         awb_number = None
         try:
             awb_number = AWB.objects.filter(status__isnull=True).order_by('pk')[0]
             # update status of awb to SD
-            awb_number.status_id = detail_entry_status.id
+            awb_number.status_id = status_id
             awb_number.save()
         except:
             return None
@@ -1240,3 +1242,10 @@ class ProcessingApi(View):
             }
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
+
+
+class ReportSiteApi(View):
+    def post(self, request):
+        report = SiteReport()
+        response = report.print_blank(request)
+        return HttpResponse(json.dumps(response), content_type='application/pdf')
