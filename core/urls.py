@@ -86,7 +86,6 @@ urlpatterns = [
     url(r'^api/item/site/(?P<site_pk>\d+)/$', api.ItemSiteApi.as_view(),
         name='api-item-site'),
 
-    # REPORT
-    url(r'^api/item/report/', api.ReportSiteApi.as_view(), name='report-view'),
-
+    # PICK UP
+    url(r'^api/site/pickup/', api.PickUpReadApi.as_view(), name='api-pickup-read'),
 ]
