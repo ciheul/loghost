@@ -1585,13 +1585,21 @@ class ItemDeliveryUpdateFailApi(View):
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
 
-class ReportSiteApi(View):
-    def post(self, request):
-        report = SiteReport()
-        response = report.print_blank(request)
-        return HttpResponse(json.dumps(response), content_type='application/pdf')
+class PickUpReadApi(View):
+    def get(self, request):
+        agents = Site.objects.all()
+        data = list()
+        for agent in agents:
+            items = ItemSite.objects.filter(site=agent.id)
+            t = {
+                'name': agent.name,
+                'type': agent.type.name,
+                'address': agent.address,
+                'city': agent.city.name,
+                'amount':len(items),
+            }
+            data.append(t)
 
-    # format date in string: Sep 1 2016  1:33PM
-    def convert_to_datetime(self, date_in_string):
-        return datetime.strptime(date_in_string, '%b %d %Y %I:%M%p')
+        response = { 'success':0, 'data': data}
+        return HttpResponse(json.dumps(response), content_type='application/json')
 

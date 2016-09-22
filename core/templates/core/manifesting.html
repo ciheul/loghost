@@ -156,7 +156,12 @@
         <div class="fields">
           <div class="eight wide field required">
             <label>Transportation</label>
-            <input type="text" name="transport_name" placeholder="identifier">
+            <select class="ui fluid dropdown" name="transportation">
+              <option value="">Choose Transportation</option>
+              {% for transport in transporttype %}
+                <option value="{{ transport.id }}">{{ transport.name }}</option>
+              {% endfor %}
+            </select>
           </div>
 
           <div class="eight wide field required">

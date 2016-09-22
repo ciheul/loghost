@@ -16,14 +16,16 @@
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td>Dummy Name Dummy</td>
-        <td>Dummy Type</td>
-        <td>Dummy Address</td>
-        <td>Dummy City</td>
-        <td>8 Dummy</td>
-        <td><div class="mini ui blue button" data-action="print">Print</div></td>
-      </tr>
+        {% for agent in data %}
+        <tr>
+            <td>{{ agent.dataagent.name }}</td>
+            <td>{{ agent.dataagent.type }}</td>
+            <td>{{ agent.dataagent.address }}</td>
+            <td>{{ agent.dataagent.city }}</td>
+            <td>{{ agent.amount }}</td>
+            <td><div class="mini ui blue button" data-action="print">Print</div></td>
+        </tr>
+        {% endfor %}
     </tbody>
   </table>
 </div>
@@ -40,26 +42,25 @@
     bInfo: false,
     {# serverSide: true, #}
     /*ajax: {
-      url: "{% url 'api-tariff-read' %}",
+      url: "{% url 'api-pickup-read' %}",
       type: 'GET'
-    },*/
+    },
     columns: [
-      {data: 'Name', className: 'dt-left'},
-      {data: 'Type', className: 'dt-left'},
-      {data: 'Address', className: 'dt-left'},
-      {data: 'City', className: 'dt-left'},
-      {data: 'Amount', className: 'dt-left'},
-      {data: 'Action', className: 'dt-left'},
+      {data: 'name', className: 'dt-left'},
+      {data: 'type', className: 'dt-left'},
+      {data: 'address', className: 'dt-left'},
+      {data: 'city', className: 'dt-left'},
+      {data: 'amount', className: 'dt-left'},
     ],
     columnDefs: [
       {
         targets: -1,  
         render: function(data, type, row, meta) {
           return ''
-            '<div class="mini ui blue button" data-action="print" data-pk=' + row.action + ' data-origin="' + row.origin+ '" data-destination="' + row.destination + '" data-service="' + row.service + '">Print</div>';
+            + '<div class="mini ui blue button" data-action="print" data-pk=' + row.action + ' data-name="' + row.name + '" data-type="' + row.type + '" data-address="' + row.address + '"data-city="' + row.city + '"data-amount="' + row.amount + '">Print</div>';
         }
       }
-    ]
+    ]*/
   });
 
 </script>
