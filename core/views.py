@@ -160,7 +160,9 @@ class DeliveryManagementView(StaffView):
     def get(self, request):
         context = {
             'delivery_active': 'active',
-            'couriers': Courier.objects.all().order_by('name')
+            'couriers': Courier.objects.filter(city_id=request.user.site.city.id) \
+                                            .order_by('name'),
+            'user_id': request.user.id
         }
         return render(request, 'core/delivery.html', context)
 

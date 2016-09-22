@@ -58,8 +58,6 @@ urlpatterns = [
         name='api-delivery-create'),
     url(r'^api/delivery/update/$',api.ItemDeliveryUpdateApi.as_view(), 
         name='api-delivery-update'),
-    url(r'^api/delivery/failupdate/$',api.ItemDeliveryUpdateFailApi.as_view(), 
-        name='api-delivery-failupdate'),
 
 
 
