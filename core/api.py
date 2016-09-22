@@ -1356,10 +1356,6 @@ class ItemIncidentApi(View):
 #user_id, awb_list, courier_id
 class ItemDeliveryCreateApi(View):
     def post(self, request):
-        print 'userid : ' + str( request.POST['user_id'])
-        print 'awblist : ' + str(request.POST.getlist('awb_list'))
-        print 'courierid : ' + str( request.POST['courier_id'])
-
         if not request.POST['user_id'] \
                 or not request.POST.getlist('awb_list'):
             response = {
@@ -1369,8 +1365,8 @@ class ItemDeliveryCreateApi(View):
             return HttpResponse(json.dumps(response),
                         content_type='application/json')
 
-        if not request.POST['courier_id'] \
-            and not request.POST['forwarder_id']:
+        if not request.POST.get('courier_id', False) \
+            and not request.POST.get('forwarder_id', False):
             response = {
                         'success': -1,
                         'message': "Parameters are not complete",
@@ -1390,7 +1386,7 @@ class ItemDeliveryCreateApi(View):
                         content_type='application/json')
 
         is_courier = True
-        if not request.POST['courier_id']:
+        if not request.POST.get('courier_id', False):
             is_courier = False
 
         awb_qs = AWB.objects.filter( \
@@ -1465,8 +1461,9 @@ class ItemDeliveryCreateApi(View):
 # receiver_name, receive_date
 class ItemDeliveryUpdateApi(View):
     def post(self, request):
+        print 'data list : ' + str( request.POST.getlist('data_list'))
         if not request.POST['user_id'] \
-                or not request.POST.getlist('awb'):
+                or not request.POST.getlist('data_list'):
             response = {
                         'success': -1,
                         'message': "Parameters are not complete",

@@ -172,15 +172,20 @@ class DeliveryThirdPartyManagementView(StaffView):
     def get(self, request):
         context = {
             'delivery_third_active': 'active',
-            'forwarders': Forwarder.objects.all().order_by('name')
+            'forwarders': Forwarder.objects.filter(
+                                        city_id=request.user.site.city.id) \
+                                        .order_by('name'),
+            'user_id': request.user.id
         }
         return render(request, 'core/delivery-forwarder.html', context)
 
 class DeliveryUpdateManagementView(StaffView):
     def get(self, request):
+        code_list = ['OK','SC','NH','BA','CM','CA','NT','UK','HP']
         context = {
             'delivery_update': 'active',
-            'status': ItemStatus.objects.all().order_by('name')
+            'status': ItemStatus.objects.filter(code__in=code_list).order_by('name'),
+            'user_id': request.user.id
         }
         return render(request, 'core/delivery-update.html', context)
 

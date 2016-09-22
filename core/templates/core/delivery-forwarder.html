@@ -185,18 +185,24 @@
 
     console.log('data to send --> ', collections);
     
-    // $.ajax({
-    //   'url': "{% url 'api-inbound' %}", 
-    //   'method': "POST",
-    //   'data': {
-    //     'awbs:' collections
-    //   },
+        $.ajax({
+      url: "{% url 'api-delivery-create' %}", 
+      method: "POST",
+      traditional: true,
+      dataType: 'json',
+      data: {
+        awb_list: collections,
+        forwarder_id:  $('#courier option:selected').val(),
+        user_id: {{user_id}}
+      },
 
-    // }).done(function(response) {
-          // resetTable();
-    //   collections = [];
-    //   $('.ui.fluid.dropdown.selection').dropdown('clear') // or $('#courier').dropdown('clear');
-    // });
+    }).done(function(response) {
+          resetTable();
+      collections = [];
+      $('.ui.fluid.dropdown.selection').dropdown('clear') 
+    // or $('#courier').dropdown('get value');
+     });
+
 
     return false;
   });

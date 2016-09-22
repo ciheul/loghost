@@ -201,7 +201,8 @@
 
     t.row.add( [
       $('.bag-text').val(),
-      'AF - Arrival Sorter',
+      $('#status option:selected').text(),
+      //'AF - Arrival Sorter',
       value,
     ] ).draw( true );
     
@@ -225,7 +226,8 @@
     }
 
     // adding to new Collection
-    collections.push(dataPushed);
+    //collections.push(dataPushed);
+    collections.push(JSON.stringify(dataPushed));
 
     $('.bag-text').val('');
     $('#date').val('');
@@ -251,18 +253,22 @@
 
     console.log('data to send --> ', collections);
     
-    // $.ajax({
-    //   'url': "{% url 'api-inbound' %}", 
-    //   'method': "POST",
-    //   'data': {
-    //     'awbs:' collections
-    //   },
+    $.ajax({
+      url: "{% url 'api-delivery-update' %}", 
+      method: "POST",
+      traditional: true,
+      dataType: 'json',
+      data: {
+        data_list: collections,
+        user_id: {{user_id}}
+      },
 
-    // }).done(function(response) {
-          // resetTable();
-    //   collections = [];
-    //   $('.ui.fluid.dropdown.selection').dropdown('clear') // or $('#status').dropdown('clear');
-    // });
+    }).done(function(response) {
+          resetTable();
+      collections = [];
+      $('.ui.fluid.dropdown.selection').dropdown('clear') 
+    // or $('#courier').dropdown('get value');
+     });
 
     return false;
   });
