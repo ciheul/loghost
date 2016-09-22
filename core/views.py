@@ -181,3 +181,8 @@ class DeliveryUpdateManagementView(StaffView):
             'status': ItemStatus.objects.all().order_by('name')
         }
         return render(request, 'core/delivery-update.html', context)
+
+class InventoryManagementView(StaffView):
+    def get(self, request):
+        context = { 'report_active': 'active', 'site': request.user.site }
+        return render(request, 'core/inventory-management.html', context)

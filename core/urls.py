@@ -36,6 +36,8 @@ urlpatterns = [
         name='core-delivery-third'),
     url(r'^management/deliveryupdate/$', views.DeliveryUpdateManagementView.as_view(),
         name='core-delivery-update'),
+    url(r'^management/inventory/$', views.InventoryManagementView.as_view(),
+        name='core-inventory'),
 
     # API
     url(r'^api/item/insert/$',api.ItemInsertApi.as_view(), 
