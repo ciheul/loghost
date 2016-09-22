@@ -6,7 +6,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from core.models import City, AWB, Service, Site, ItemStatus, ItemSite, SiteType, GoodType, PaymentType
-from core.models import Transportation, TransportationType, Courier
+from core.models import Transportation, TransportationType, Courier, Forwarder
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -163,3 +163,19 @@ class DeliveryManagementView(StaffView):
             'couriers': Courier.objects.all().order_by('name')
         }
         return render(request, 'core/delivery.html', context)
+
+class DeliveryThirdPartyManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'delivery_third_active': 'active',
+            'forwarders': Forwarder.objects.all().order_by('name')
+        }
+        return render(request, 'core/delivery-forwarder.html', context)
+
+class DeliveryUpdateManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'delivery_update': 'active',
+            'status': ItemStatus.objects.all().order_by('name')
+        }
+        return render(request, 'core/delivery-update.html', context)

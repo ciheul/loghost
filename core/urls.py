@@ -32,6 +32,10 @@ urlpatterns = [
         name='core-arrival-item'),
     url(r'^management/delivery/$', views.DeliveryManagementView.as_view(),
         name='core-delivery'),
+    url(r'^management/deliveryforward/$', views.DeliveryThirdPartyManagementView.as_view(),
+        name='core-delivery-third'),
+    url(r'^management/deliveryupdate/$', views.DeliveryUpdateManagementView.as_view(),
+        name='core-delivery-update'),
 
     # API
     url(r'^api/item/insert/$',api.ItemInsertApi.as_view(), 

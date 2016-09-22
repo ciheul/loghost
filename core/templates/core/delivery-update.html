@@ -1,0 +1,339 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header ui form" style="margin-bottom:1em">
+    <div class="fields">
+      <div class="thirteen wide field">
+        Delivery Update
+      </div>
+
+      <div class="three wide field">
+        <button id="confirm-bag-awbs" class="ui button green right floated">Confirm Delivery</button>
+      </div>
+
+    </div>
+
+  </h1>
+
+  <form class="ui form" id="submit-bag-form">
+    
+    <div class="fields">
+      <div class="five wide field">
+        <input class="bag-text" type="text" name="awb" placeholder="AWB">
+      </div>
+
+      <div class="five wide field">
+
+        <select id="status" class="ui fluid dropdown" name="status">
+          <option value="">Choose Status</option>
+          {% for stats in status %}
+            <option value="{{ stats.id }}">{{ stats.code }} - {{ stats.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="two wide field">
+        <button class="ui button blue" type="submit"><i class="shopping basket icon"></i> Submit</button>
+      </div>
+
+    </div>
+
+    <div class="fields" id="delivered-panel" style="disply:none;">
+      <div class="five wide field">
+        <input id="reciever_name" type="text" name="reciever_name" placeholder="reciever name">
+      </div>
+
+      <div class="five wide field">
+        <input id="date" type="date" name="date">
+      </div>
+
+      <div class="two wide field">
+
+      </div>
+        
+    </div>
+  
+  </form>
+ 
+  <table id="arrival-table" class="ui celled table">
+    <thead>
+      <tr>
+        <th>AWB</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- <tr>
+        <td>DUMMYAWB</td>
+        <td>AF - Inbound</td>
+        <td><div class="mini ui blue button" data-action="update">Update Status</div></td>
+      </tr> -->
+    </tbody>
+  </table>
+
+</div>
+
+<div id="modal-container"></div>
+
+<script type="text/template" id="error-msg-template">
+  <span class="error-msg" style="color:#E0B4B4; font-size:12px; font-style:italic;">Field required</span>
+</script>
+
+<script type="text/template" id="confirmation-modal-template">
+  <div class="ui small modal" id="confirmation-modal">
+    <i class="close icon"></i>
+    <div class="header">Bag Confirmation</div>
+    <div class="content confirmation-content">
+      Please make sure you already done scanning.
+    </div>
+    <div class="actions">
+      <div class="ui negative deny button cancel">Cancel</div>
+      <div class="ui positive button done">Done</div>
+    </div>
+  </div>
+</script>
+
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+  $('#delivered-panel').hide();
+</script>
+
+<script type="text/javascript">
+  var collections = [];
+  var error_msg = [];
+  var value = '<div class="mini ui blue button" data-action="update">Update Status</div>';
+  
+  $(document).ready(function() {
+    
+    $('#arrival-table').DataTable({
+      searching: false,
+      bLengthChange: false,
+      bInfo: false,
+    });
+
+    $('.awb-text').focus(); 
+
+  });
+
+</script>
+
+<script type="text/javascript">
+  $('#submit-bag-form').submit(function() {
+    
+    resetErrorView();
+    
+    var data = $('#submit-bag-form').serializeObject();
+    data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+   
+    if ($('.bag-text').val() === '') {
+      error_msg['bag'] = true;
+      setErrorView(error_msg);
+      console.log('You cant skip bag without filling the bag.');
+      return false;
+    }
+
+    // resetTable();
+
+    return false;
+  });
+
+</script>
+
+<script type="text/javascript">
+  var delivered = ['SC', 'OK'];
+  var cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+  var cour_select = cour_text.split(' ', 1)[0];
+  
+  $('.ui.dropdown').on('change', function() {
+    cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+    cour_select = cour_text.split(' ', 1)[0];
+    $('#delivered-panel').hide();
+    if(jQuery.inArray(cour_select, delivered) !== -1) {
+      console.log('trueh', cour_select, delivered, cour_text);
+      $('#delivered-panel').show();
+      return;
+    }
+
+  });
+
+  $('#submit-bag-form').submit(function() {
+    resetErrorView();
+    
+    var data = $('#submit-awb-form').serializeObject();
+    var cour = $('.ui.fluid.dropdown.selection').dropdown('get value');
+    var errCounter = 0;
+    console.log(cour);
+
+    if ($('.bag-text').val() === '') {
+      error_msg['bag'] = true;
+      errCounter++;
+    }
+
+    if ($('#date').val() === '') {
+      error_msg['date'] = true;
+      errCounter++;
+    }
+
+    if ($('#reciever_name').val() === '') {
+      error_msg['reciever_name'] = true;
+      errCounter++;
+    }
+
+    if (cour === "") {
+      error_msg['cour'] = true;
+      errCounter++;
+    }
+
+    if (errCounter > 0) {
+      setErrorView(error_msg);
+      return false;
+    }
+
+    data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+    console.log('been submitted', data);
+    
+    var t = $('#arrival-table').DataTable();
+
+    t.row.add( [
+      $('.bag-text').val(),
+      'AF - Arrival Sorter',
+      value,
+    ] ).draw( true );
+    
+    cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+    cour_select = cour_text.split(' ', 1)[0];
+
+    var dataPushed = {};
+
+    dataPushed = {
+      awb: $('.bag-text').val(),
+      status: cour_select
+    };
+
+    if(jQuery.inArray(cour_select, delivered) !== -1) {
+      dataPushed = {
+        awb: $('.bag-text').val(),
+        status: cour_select,
+        reciever_name: $('#reciever_name').val(),
+        date: $('#date').val()
+      };
+    }
+
+    // adding to new Collection
+    collections.push(dataPushed);
+
+    $('.bag-text').val('');
+    $('#date').val('');
+    $('#reciever_name').val('');
+    $('.bag-text').focus(); 
+
+    console.log('submit-bag-form', data);
+
+    return false;
+  });
+</script>
+
+<script type="text/javascript">
+  $('#confirm-bag-awbs').click(function() {
+    resetErrorView();
+
+    if (collections.length === 0) {
+      console.log('Nothing to add.');
+      error_msg['bag'] = true;
+      setErrorView(error_msg);
+      return false;
+    }
+
+    console.log('data to send --> ', collections);
+    
+    // $.ajax({
+    //   'url': "{% url 'api-inbound' %}", 
+    //   'method': "POST",
+    //   'data': {
+    //     'awbs:' collections
+    //   },
+
+    // }).done(function(response) {
+          // resetTable();
+    //   collections = [];
+    //   $('.ui.fluid.dropdown.selection').dropdown('clear') // or $('#status').dropdown('clear');
+    // });
+
+    return false;
+  });
+</script>
+
+<!-- Form Script Notifiers -->
+<script type="text/javascript">
+
+  var err_template = $('#error-msg-template').html();
+
+  function setErrorView(error) {
+    if (error.bag) {
+      $('.bag-text').parent().addClass('error');
+      $('.bag-text').parent().append(err_template);
+    }
+
+    if (error.cour) {
+      $('#status').parent().addClass('error');
+      $('#status').parent().parent().append(err_template);
+    }
+
+    if (error.date) {
+      $('#date').parent().addClass('error');
+      console.log(';set');
+    }
+
+    if (error.reciever_name) {
+      $('#reciever_name').parent().addClass('error');
+      console.log(';set');
+    }
+
+  }
+
+  function resetErrorView() {
+    $('.bag-text').parent().removeClass('error');
+    $('#date').parent().removeClass('error');
+    $('#reciever_name').parent().removeClass('error');
+    $('#status').parent().removeClass('error');
+    $('.error-msg').remove();
+  }
+
+  function resetTable() {
+    collections = [];
+
+    $('#arrival-table').DataTable().clear();
+    $('#arrival-table').hide();
+    $('#arrival-table').DataTable().destroy();
+    
+    $('#arrival-table').DataTable({
+      searching: false,
+      bLengthChange: false,
+      bInfo: false,
+    });
+    $('#arrival-table').show();
+
+    $('.bag-text').val('');
+    $('.bag-text').focus();
+  }
+
+  /*var modal_template = $('#confirmation-modal-template').html();
+  
+  function confirmationModal() {
+    
+    $('#modal-container').empty();
+    $('#modal-container').html(modal_template);
+    $('#confirmation-modal').modal('show');
+    
+    resetTable();
+    
+  }*/
+
+</script>
+
+{% endblock %}
