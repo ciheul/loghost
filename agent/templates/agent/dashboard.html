@@ -10,6 +10,12 @@
     <button class="mini ui primary button print-btn">Print Shipment Marking</button>
   </form>
 
+  <h3 class="ui dividing header">Shipment Receipt More Than 5 Address</h3>
+  <form action="{% url 'ag-shipment-receipt' %}" target="_blank" method="post">
+    {% csrf_token %}
+    <button class="mini ui primary button print-btn">Print Shipment Receipt</button>
+  </form>
+
   <h3 class="ui dividing header">Berita</h3>
   <div class="ui divided items">
     <div class="item">

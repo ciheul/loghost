@@ -31,14 +31,30 @@ class AgentReport:
                                       fontSize=6,
                                       fontName='Helvetica')
         self.sender_style = ParagraphStyle(name='sender',
-                                      fontSize=8,
-                                      fontName='Helvetica')
+                                           fontSize=8,
+                                           fontName='Helvetica')
         self.receiver_style = ParagraphStyle(name='receiver',
-                                      spaceAfter=10,
-                                      fontSize=16,
-                                      fontName='Helvetica-Bold')
+                                             spaceAfter=10,
+                                             fontSize=16,
+                                             fontName='Helvetica-Bold')
+        self.statement_style = ParagraphStyle(name='statement',
+                                              fontSize=8,
+                                              fontName='Helvetica')
         self.styles = getSampleStyleSheet()
 
+    def generate_barcode(self, awb):
+        ean = barcode.get('ean13', awb, writer=ImageWriter())
+
+        # write barcode in png format to dist and return its path
+        path = ean.save(awb)
+
+        return path
+
+    def coord(self, x, y, unit=1):
+        # x, y = x*unit, self.page_height - y*unit
+        return x, y
+
+    # USELESS
     def print_awb2(self, request):
         item = Item.objects.get(pk=request.POST['pk'])
 
@@ -452,10 +468,147 @@ class AgentReport:
 
         return response
 
-    def generate_barcode(self, awb):
-        ean = barcode.get('ean13', awb, writer=ImageWriter())
+    def print_shipment_receipt_multiple_address(self, request):
+        # setting for sending back the PDF in response
+        filename = 'shipment-receipt.pdf'
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'filename="%s"' % filename
 
-        # write barcode in png format to dist and return its path
-        path = ean.save(awb)
+        c = canvas.Canvas(response, pagesize=A4)
 
-        return path
+        # HEADER
+        # insert Axes logo into flowables
+        img_path = os.path.join(settings.BASE_DIR,
+                                'static/loghost/images/area-51-logistik.png')
+        img_reader = ImageReader(img_path)
+        img_width, img_height = img_reader.getSize()
+
+        c.drawImage(img_path, 30, 762, width=img_width * 0.75, height=img_height * 0.75,
+                    mask='auto')
+
+        c.setFont('Helvetica-Bold', 16)
+        c.drawString(250, 780, 'BUKTI PENERIMAAN KIRIMAN')
+
+        # agent information
+        c.setFont('Helvetica', 6)
+        c.drawCentredString(100, 748, "JALAN PONDOK GEDE RAYA NO. 48D, JAKARTA TIMUR")
+        c.drawCentredString(100, 740, "Telepon: (021) 2298-4551 / (021) 2298-4669")
+        c.drawCentredString(100, 732, "www.area51logistik.com")
+
+        # LINE AND RECTANGLE
+        # horizontal line in the center page
+        c.line(0, self.page_height/2, self.page_width, self.page_height/2)
+
+        # no1 rectangle
+        c.rect(20, 660, 270, 60)
+
+        # no2 rectangle
+        c.rect(305, 660, 270, 60)
+
+        # no3 rectangle
+        c.rect(20, 500, 555, 140)
+
+        # no4 rectangle
+        c.rect(20, 430, 350, 63)
+
+        # no5 rectangle
+        c.rect(385, 430, 190, 63)
+
+        # no1 horizontal line 
+        c.line(20, 620, 575, 620)
+
+        # no2 horizontal line 
+        c.line(20, 518, 575, 518)
+
+        # no1 vertical line 
+        c.line(40, 640, 40, 500)
+
+        # no2 vertical line 
+        c.line(133, 640, 133, 500)
+
+        # no3 vertical line 
+        c.line(180, 640, 180, 500)
+
+        # no4 vertical line 
+        c.line(235, 640, 235, 500)
+
+        # no5 vertical line 
+        c.line(260, 640, 260, 500)
+
+        # no6 vertical line 
+        c.line(295, 640, 295, 500)
+
+        # no7 vertical line 
+        c.line(335, 640, 335, 500)
+
+        # no8 vertical line 
+        c.line(360, 640, 360, 500)
+
+        # no9 vertical line 
+        c.line(440, 640, 440, 500)
+
+        # no10 vertical line 
+        c.line(500, 640, 500, 500)
+
+        # TEXT
+        # sender and receiver
+        data = [
+            ['Operator'    , ' :', 'No. Pelanggan', ' :'],
+            ['Hari/Tanggal', ' :', 'Pengirim'     , ' :'],
+            ['Jam'         , ' :', 'Alamat'       , ' :'],
+            ['Lokasi'      , ' :', ''             , ''  ],
+            ['Kota'        , ' :', ''             , ''  ],
+        ]
+
+        table = Table(data, colWidths=(18*mm, 82*mm, 20*mm, 20*mm))
+        table.setStyle(TableStyle([
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), -1),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), -1),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ]))
+        table.wrapOn(c, self.page_width, self.page_height)
+        table.drawOn(c, *self.coord(27, 665, mm))
+
+        c.setFont('Helvetica', 10)
+        c.drawString(25, 645, 'Rincian Barang Kiriman')
+
+        header_y = 627
+        c.setFont('Helvetica', 10)
+        c.drawString(24, header_y, 'No')
+        c.drawString(55, header_y, 'AWB Number')
+        c.drawString(138, header_y, 'Layanan')
+        c.drawString(190, header_y, 'Tujuan')
+        c.drawString(240, header_y, 'Pcs')
+        c.drawString(265, header_y, 'Berat')
+        c.drawString(300, header_y, 'Brt Vol')
+        c.drawString(340, header_y, 'Ins')
+        c.drawString(380, header_y, 'Penerima')
+        c.drawString(460, header_y, 'Ref.')
+        c.drawString(530, header_y, 'Rp.')
+
+        statement= list()
+        content = "Dengan ini pengirim menyatakan telah memberi keterangan " \
+            "sebenarnya dan menyetujui syarat-syarat pengiriman seperti " \
+            "tertera di halaman belakang tanda terima barang kiriman ini."
+        statement.append(Paragraph(content, self.statement_style))
+
+        f = Frame(21, 422, 150, 75, showBoundary=0)
+        f.addFromList(statement, c)
+
+        c.setFont('Helvetica-Bold', 8)
+        c.drawString(270, 480, 'Pengirim,')
+
+        c.setFont('Helvetica', 8)
+        c.drawString(190, 435, 'Nama Jelas :')
+
+        c.setFont('Helvetica-Bold', 8)
+        c.drawString(460, 480, 'Petugas Penerima,')
+
+        c.setFont('Helvetica', 8)
+        c.drawString(400, 435, 'Nama Jelas :')
+
+        c.showPage()
+        c.save()
+
+        return response
