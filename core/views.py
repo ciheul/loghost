@@ -6,7 +6,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from core.models import City, Service, Site, ItemSite, SiteType, GoodType, PaymentType
-from core.models import Transportation, TransportationType 
+from core.models import Transportation, TransportationType, Courier
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -125,7 +125,7 @@ class ManifestingManagementView(StaffView):
             'manifesting_active': 'active',
             'transports': Transportation.objects.all().order_by('identifier'),
             'cities': City.objects.all().order_by('name'),
-            'transporttype': TransportationType.objects.all().order_by('name')
+            'transport_type': TransportationType.objects.all().order_by('name')
         }
         return render(request, 'core/manifesting.html', context)
 
@@ -135,6 +135,28 @@ class AirportManagementView(StaffView):
             'airport_active': 'active',
             'transports': Transportation.objects.all().order_by('identifier'),
             'cities': City.objects.all().order_by('name'),
+            'transport_type': TransportationType.objects.all().order_by('name')
         }
         return render(request, 'core/airport.html', context)
 
+class ArrivalBagManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'arrival_bag_active': 'active'
+        }
+        return render(request, 'core/arrival-bag.html', context)
+
+class ArrivalItemManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'arrival_item_active': 'active'
+        }
+        return render(request, 'core/arrival-item.html', context)
+
+class DeliveryManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'delivery_active': 'active',
+            'couriers': Courier.objects.all().order_by('name')
+        }
+        return render(request, 'core/delivery.html', context)

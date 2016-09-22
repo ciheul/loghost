@@ -168,7 +168,7 @@
     ] ).draw( true );
     
     // adding to new Collection
-    collections.push($('.bag-text').val());
+    collections.push($('.awb-text').val());
 
     $('.awb-text').val('');
     $('.awb-text').focus(); 
@@ -202,9 +202,9 @@
       return false;
     }
 
+    collections.push($('.bag-text').val());
     console.log('data to send --> ', collections);
     
-    resetTable();
     // $.ajax({
     //   'url': "{% url 'api-inbound' %}", 
     //   'method': "POST",
@@ -213,6 +213,7 @@
     //   },
 
     // }).done(function(response) {
+          // resetTable();
     //   collections = [];
     // });
 
@@ -281,7 +282,6 @@
     $('#confirmation-modal').modal('show');
     
     resetTable();
-    
     
   }*/
 

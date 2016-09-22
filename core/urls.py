@@ -26,6 +26,12 @@ urlpatterns = [
         name='core-airport'),
     url(r'^management/arrival/$', views.ArrivalManagementView.as_view(),
         name='core-arrival'),
+    url(r'^management/arrivalbag/$', views.ArrivalBagManagementView.as_view(),
+        name='core-arrival-bag'),
+    url(r'^management/arrivalitem/$', views.ArrivalItemManagementView.as_view(),
+        name='core-arrival-item'),
+    url(r'^management/delivery/$', views.DeliveryManagementView.as_view(),
+        name='core-delivery'),
 
     # API
     url(r'^api/item/insert/$',api.ItemInsertApi.as_view(), 

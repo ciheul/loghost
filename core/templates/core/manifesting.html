@@ -5,11 +5,12 @@
 <div class="ui main container" style="margin-top:6em;margin-bottom:6em">
   <h1 class="ui header ui form" style="margin-bottom:1em">
     <div class="fields">
-      <div class="eight wide field">
+      <div class="six wide field">
         Manifesting
       </div>
-      <div class="eight wide field">
-        <button id="add-transport-btn"type="button" class="ui blue button right floated"><i class="shipping icon"></i> New Transportation</button>
+      <div class="ten wide field">
+        <button type="button" class="ui green button right floated confirm-manifest"><!-- <i class="shipping icon"></i> --> Confirm Manifest</button>
+        <button id="add-transport-btn" type="button" class="ui blue button right floated"><i class="shipping icon"></i> New Transportation</button>
       </div>
     </div>
   </h1>
@@ -36,18 +37,18 @@
     
     <div class="fields">
       <div class="eight wide field required">
-        <label>Departed at</label>
+        <label>Origin City</label>
         <select class="ui fluid dropdown" name="origin_city">
-          <option value="">Departed At</option>
+          <option value="">Origin City</option>
           {% for city in cities %}
             <option value="{{ city.pk }}">{{ city.name }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="eight wide field required">
-        <label>Arrived at</label>
-        <select class="ui fluid dropdown" name="origin_city1">
-          <option value="">Arrived at</option>
+        <label>Destination City</label>
+        <select class="ui fluid dropdown" name="destination_city">
+          <option value="">Destination City</option>
           {% for city in cities %}
             <option value="{{ city.pk }}">{{ city.name }}</option>
           {% endfor %}
@@ -61,20 +62,20 @@
 
     <div class="fields">
       <div class="eight wide field">
-        <label>Origin City Note</label>
-        <input type="text" name="destination" placeholder="Jl. Mata Air No 22">
+        <label>Origin Note</label>
+        <input type="text" name="origin_note" placeholder="Optional">
       </div>
       <div class="eight wide field">
-        <label>Origin Destination Note</label>
-        <input type="text" name="destination" placeholder="Jl. Batununggal Jelita 2 No 22">
+        <label>Destination Note</label>
+        <input type="text" name="destination_note" placeholder="Optional">
       </div>
       <div class="eight wide field">
         <label>Capacity</label>
-        <input type="text" name="capacity" placeholder="1000">
+        <input type="number" name="capacity" placeholder="100" value="">
       </div>
       <div class="eight wide field">
         <label>Base</label>
-        <input type="text" name="base" placeholder="1000">
+        <input type="text" name="base" placeholder="">
       </div>
     </div>
 
@@ -83,29 +84,28 @@
     </div>
 
   </form>
-
-  <!-- 
-  departed_at
-  base
-  transportation_type
-  origin_city_id
-  departed_at
-  arrived_at
-  identifier
-  operator
-  operator_phone
-  capacity
-  -->
   
   <div class="ui dividing header"></div>
 
-  <form class="ui form">
+  <div class="ui form">
     <div class="fields">
       <div class="eight wide field">
-        <table id="report" class="ui celled table">
+          
+        <form class="ui form" id="insert-awb">
+          <div class="fields">
+            <div class="twelve wide field">
+              <input class="awb-text" type="text" name="awb" value="" placeholder="AWB">
+            </div>
+            <div class="four wide field">
+              <input class="ui button blue" type="submit" value="Submit AWB">
+            </div>
+          </div>
+        </form>
+
+        <table id="table-awb" class="ui celled table">
           <thead>
             <tr>
-              <th>A W B</th>
+              <th>AWB</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -119,7 +119,19 @@
       </div>
 
       <div class="eight wide field">
-        <table id="report2" class="ui celled table">
+          
+        <form class="ui form" id="insert-bag">
+          <div class="fields">
+            <div class="twelve wide field">
+              <input class="bag-text" type="text" name="bag" value="" placeholder="BAG">
+            </div>
+            <div class="four wide field">
+              <input class="ui button blue" type="submit" value="Submit BAG">
+            </div>
+          </div>
+        </form>
+
+        <table id="table-bag" class="ui celled table">
           <thead>
             <tr>
               <th>Bagging ID</th>
@@ -136,14 +148,107 @@
       </div>
       
     </div>
-  </form>
+  </div>
 
+  <div class="fields">
+      <div class="six wide field">
+      </div>
+      <div class="ten wide field">
+        <button type="button" class="ui green button right floated confirm-manifest"><!-- <i class="shipping icon"></i> --> Confirm Manifest</button>
+
+      </div>
+    </div>
 
 
 </div>
 
 <div id="modal-container"></div>
 
+<div class="ui small modal" id="add-transport-modal">
+  <i class="close icon"></i>
+  <div class="header">Add Transport</div>
+  <div class="content add-transport-content">
+
+    <form class="ui form" id="add-transportation-form">
+      <h3 class="ui dividing header">Transpostation Info</h3>
+      <div class="fields">
+
+        <div class="eight wide field required">
+          <label>Transportation Type</label>
+          <select class="ui fluid dropdown" name="origin_city">
+            <option value="">Transportation Type</option>
+            {% for type in transport_type %}
+              <option value="{{ type.pk }}">{{ type.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="eight wide field required">
+          <label>Opertor</label>
+          <input type="text" name="operator" placeholder="operator">
+        </div>
+        
+        <div class="eight wide field required">
+          <label>Identifier</label>
+          <input type="text" name="identifier" placeholder="identifier">
+        </div>
+
+      </div>
+
+      <div class="fields">
+        <div class="eight wide field required">
+          <label>Departed at</label>
+          <select class="ui fluid dropdown" name="origin_city">
+            <option value="">Departed At</option>
+            {% for city in cities %}
+              <option value="{{ city.pk }}">{{ city.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="eight wide field required">
+          <label>Arrived at</label>
+          <select class="ui fluid dropdown" name="origin_city1">
+            <option value="">Arrived at</option>
+            {% for city in cities %}
+              <option value="{{ city.pk }}">{{ city.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="ui dividing header">Additional Info</div>
+      </div>
+
+      <div class="fields">
+        <div class="eight wide field">
+          <label>Origin Note</label>
+          <input type="text" name="destination" placeholder="Optional">
+        </div>
+        <div class="eight wide field">
+          <label>Origin Destination Note</label>
+          <input type="text" name="destination" placeholder="Optional">
+        </div>
+        <div class="eight wide field">
+          <label>Capacity</label>
+          <input type="number" name="capacity" placeholder="100">
+        </div>
+        <div class="eight wide field">
+          <label>Base</label>
+          <input type="text" name="base" placeholder="">
+        </div>
+      </div>
+
+      <div class="field" align="right">
+        <div class="ui form ui positive button add-transport">Add</div>
+      </div>
+
+    </form>
+
+  </div>
+  <div class="actions">
+  </div>
+</div>
 
 <script type="text/template" id="add-transport-modal-template">
   <div class="ui small modal" id="add-transport-modal">
@@ -151,26 +256,32 @@
     <div class="header">Add Transport</div>
     <div class="content add-transport-content">
 
-      <form class="ui form" id="transportation-form">
+      <form class="ui form" id="add-transportation-form">
         <h3 class="ui dividing header">Transpostation Info</h3>
         <div class="fields">
+
           <div class="eight wide field required">
-            <label>Transportation</label>
-            <select class="ui fluid dropdown" name="transportation">
-              <option value="">Choose Transportation</option>
-              {% for transport in transporttype %}
-                <option value="{{ transport.id }}">{{ transport.name }}</option>
+            <label>Transportation Type</label>
+            <select class="ui fluid dropdown" name="origin_city">
+              <option value="">Transportation Type</option>
+              {% for type in transport_type %}
+                <option value="{{ type.pk }}">{{ type.name }}</option>
               {% endfor %}
             </select>
           </div>
 
           <div class="eight wide field required">
-            <label>SMU</label>
-            <input type="text" name="smu" placeholder="SMU">
+            <label>Opertor</label>
+            <input type="text" name="operator" placeholder="operator">
           </div>
           
+          <div class="eight wide field required">
+            <label>Identifier</label>
+            <input type="text" name="identifier" placeholder="identifier">
+          </div>
+
         </div>
-        
+
         <div class="fields">
           <div class="eight wide field required">
             <label>Departed at</label>
@@ -198,20 +309,20 @@
 
         <div class="fields">
           <div class="eight wide field">
-            <label>Origin City Note</label>
-            <input type="text" name="destination" placeholder="Jl. Mata Air No 22">
+            <label>Origin Note</label>
+            <input type="text" name="destination" placeholder="Optional">
           </div>
           <div class="eight wide field">
             <label>Origin Destination Note</label>
-            <input type="text" name="destination" placeholder="Jl. Batununggal Jelita 2 No 22">
+            <input type="text" name="destination" placeholder="Optional">
           </div>
           <div class="eight wide field">
             <label>Capacity</label>
-            <input type="text" name="capacity" placeholder="1000">
+            <input type="number" name="capacity" placeholder="100">
           </div>
           <div class="eight wide field">
             <label>Base</label>
-            <input type="text" name="base" placeholder="1000">
+            <input type="text" name="base" placeholder="">
           </div>
         </div>
 
@@ -223,7 +334,7 @@
 
     </div>
     <div class="actions">
-      <div class="ui positive deny button">OK</div>
+      <div class="ui positive button add-transport">Add</div>
     </div>
   </div>
 </script>
@@ -235,16 +346,18 @@
 {% block javascript %}
 
 <script type="text/javascript">
+ 
+  var value = '<div class="mini ui blue button" data-action="update">Update</div><div class="mini ui red button" data-action="delete">Delete</div>';
   
   $(document).ready(function() {
     
-    $('#report').DataTable({
+    $('#table-awb').DataTable({
       searching: false,
       bLengthChange: false,
       bInfo: false,
     });
 
-    $('#report2').DataTable({
+    $('#table-bag').DataTable({
       searching: false,
       bLengthChange: false,
       bInfo: false,
@@ -254,18 +367,116 @@
 
   });
 
-  var collectionsAdded = [];
-  var value = '<div class="mini ui blue button" data-action="update">Update</div><div class="mini ui red button" data-action="delete">Delete</div>';
+</script>
+
+<script type="text/javascript">
+  var bagCollection = [];
+  var awbCollection = [];
+
+</script>
+
+
+<script type="text/javascript">
+  
+  $('#insert-awb').submit(function() {
+    var t = $('#table-awb').DataTable();
+    
+    if ($('.awb-text').val() === '') {
+      return false;
+    }
+
+    t.row.add( [
+      $('.awb-text').val(),
+      value,
+    ] ).draw( true );
+    
+    awbCollection.push($('.awb-text').val());
+
+    $('.awb-text').val('');
+    return false;
+  });
+
+  $('#insert-bag').submit(function() {
+    var t = $('#table-bag').DataTable();
+
+    if ($('.bag-text').val() === '') {
+      return false;
+    }
+
+    t.row.add( [
+      $('.bag-text').val(),
+      value,
+    ] ).draw( true );
+
+    bagCollection.push($('.bag-text').val());
+    $('.bag-text').val('');
+    return false;
+  });
+
+  $('#transportation-form').submit(function() {
+    var data = $('#transportation-form').serializeObject();
+    data.awbs = awbCollection;
+    data.bags = bagCollection;
+    console.log('send ajax here', data);
+    
+    // $.ajax({
+      // 
+    // }).done(function(response) {
+
+      // if (response.success === -1) {
+      //   console.log('error inputs', response);
+      //   return false;
+      // }
+
+      // awbCollection = [];
+      // bagCollection = []; 
+    // });
+    
+    return false;
+  });
 
 </script>
 
 <script type="text/javascript">
   
   $('#add-transport-btn').click(function() {
-    $('#modal-container').html($('#add-transport-modal-template').html());
+    // $('#modal-container').html($('#add-transport-modal-template').html());
+    
     $('#add-transport-modal').modal('show');
+
     $('.ui.dropdown').dropdown();
+
   });
+
+</script>
+
+<script type="text/javascript">
+  
+  $('.confirm-manifest').click(function() {
+    $('#transportation-form').submit();
+  });
+
+  $('#add-transportation-form').submit(function() {
+ 
+    var dataAdding = $('#add-transportation-form').serializeObject();
+    console.log('send ajax new transport', dataAdding);
+
+    // $.ajax({
+
+    // }).done(function(response) {
+      // if (response.success === -1) {
+        // console.log('error inputs', response);
+        // return false;
+      // }
+
+    // });
+  
+  });
+
+  $('.add-transport').click(function() {
+    $('#add-transportation-form').submit();
+  });
+
 
 </script>
 

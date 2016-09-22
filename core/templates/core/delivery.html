@@ -5,11 +5,11 @@
   <h1 class="ui header ui form" style="margin-bottom:1em">
     <div class="fields">
       <div class="thirteen wide field">
-        Bagging
+        Delivery
       </div>
 
       <div class="three wide field">
-        <button id="confirm-bag-awbs" class="ui button green right floated">Confirm Bag</button>
+        <button id="confirm-bag-awbs" class="ui button green right floated">Confirm Delivery</button>
       </div>
 
     </div>
@@ -17,29 +17,29 @@
   </h1>
 
   <form class="ui form" id="submit-bag-form">
+    
     <div class="fields">
-      <div class="six wide field">
-        <input class="bag-text" type="text" name="bag_id" placeholder="BAG_ID">
+      <div class="five wide field">
+
+        <select id="courier" class="ui fluid dropdown" name="courier">
+          <option value="">Choose Courier</option>
+          {% for courier in couriers %}
+            <option value="{{ courier.pk }}">{{ courier.name }}</option>
+          {% endfor %}
+        </select>
       </div>
+
+      <div class="five wide field">
+        <input class="bag-text" type="text" name="awb" placeholder="AWB">
+      </div>
+      
       <div class="two wide field">
         <button class="ui button blue" type="submit"><i class="shopping basket icon"></i> Submit</button>
-        <!-- <input class="ui button blue" type="submit" value="Submit BAG"> -->
       </div>
+
     </div>
   </form>
  
-  <form class="ui form" id="submit-awb-form">
-    <div class="fields">
-      <div class="six wide field">
-        <input class="awb-text" type="text" name="awb" placeholder="AWB">
-      </div>
-      <div class="two wide field">
-        <!-- <input class="ui button blue" type="submit" value="Submit awb"> -->
-        <button class="ui button blue" type="submit"><i class="tag icon"></i> Submit</button>
-      </div>
-    </div>
-  </form>
-
   <table id="arrival-table" class="ui celled table">
     <thead>
       <tr>
@@ -86,8 +86,8 @@
 <script type="text/javascript">
   var collections = [];
   var error_msg = [];
-  var marker = 0;
   var value = '<div class="mini ui blue button" data-action="update">Update Status</div>';
+  
   $(document).ready(function() {
     
     $('#arrival-table').DataTable({
@@ -96,11 +96,9 @@
       bInfo: false,
     });
 
-    $('.bag-text').focus(); 
+    $('.awb-text').focus(); 
 
   });
-
-  // var value = '<div class="mini ui blue button" data-action="update">Update Status</div><div class="mini ui red button" data-action="delete">Delete</div>';
 
 </script>
 
@@ -111,31 +109,15 @@
     
     var data = $('#submit-bag-form').serializeObject();
     data.csrfmiddlewaretoken = Cookies.get('csrftoken');
-    console.log(data.bag_id);
-    if (data.bag === '') {
+   
+    if ($('.bag-text').val() === '') {
       error_msg['bag'] = true;
       setErrorView(error_msg);
-      console.log('empty bag value');
+      console.log('You cant skip bag without filling the bag.');
       return false;
     }
 
-    marker++;
-
-    if (collections.length !== 0) {
-      marker = 1;
-    }
-
-    if (marker !== 1 && data.bag !== '') {
-      error_msg['bag'] = true;
-      setErrorView(error_msg);
-      $('.bag-text').next().html('You cant skip bag without filling the bag.');
-      console.log('You cant skip bag without filling the bag.');
-      return false; 
-    }
-
-    if (marker === 0) {
-      resetTable();
-    }
+    // resetTable();
 
     return false;
   });
@@ -143,13 +125,16 @@
 </script>
 
 <script type="text/javascript">
-  $('#submit-awb-form').submit(function() {
+  $('#submit-bag-form').submit(function() {
     resetErrorView();
     
-    marker = 1;
     var data = $('#submit-awb-form').serializeObject();
-    if (data.awb === '') {
-      error_msg['awb'] = true;
+    // var cour = $('#courier').dropdown('get value');
+    var cour = $('.ui.fluid.dropdown.selection').dropdown('get value');
+
+    if ($('.bag-text').val() === '' && cour === "") {
+      error_msg['bag'] = true;
+      error_msg['cour'] = true;
       setErrorView(error_msg);
       console.log('empty awb value');
       return false;
@@ -162,18 +147,18 @@
     var t = $('#arrival-table').DataTable();
 
     t.row.add( [
-      $('.awb-text').val(),
+      $('.bag-text').val(),
       'AF - Arrival Sorter',
       value,
     ] ).draw( true );
     
     // adding to new Collection
-    collections.push($('.awb-text').val());
+    collections.push($('.bag-text').val());
 
-    $('.awb-text').val('');
-    $('.awb-text').focus(); 
+    $('.bag-text').val('');
+    $('.bag-text').focus(); 
 
-    console.log('submit-awb-form', data);
+    console.log('submit-bag-form', data);
 
     return false;
   });
@@ -182,27 +167,14 @@
 <script type="text/javascript">
   $('#confirm-bag-awbs').click(function() {
     resetErrorView();
-    marker = -1;
-    if (collections.length === 0 && $('.bag-text').val() === '') {
-      console.log('Nothing to add.');
-      error_msg['all'] = true;
-      setErrorView(error_msg);
-      return false;
-    }
-
-    if ($('.bag-text').val() === '') {
-      error_msg['bag'] = true;
-      setErrorView(error_msg);
-      return false;
-    }
 
     if (collections.length === 0) {
+      console.log('Nothing to add.');
       error_msg['bag'] = true;
       setErrorView(error_msg);
       return false;
     }
 
-    collections.push($('.bag-text').val());
     console.log('data to send --> ', collections);
     
     // $.ajax({
@@ -213,8 +185,9 @@
     //   },
 
     // }).done(function(response) {
-     // resetTable();
+          // resetTable();
     //   collections = [];
+    //   $('.ui.fluid.dropdown.selection').dropdown('clear') // or $('#courier').dropdown('get value');
     // });
 
     return false;
@@ -227,34 +200,24 @@
   var err_template = $('#error-msg-template').html();
 
   function setErrorView(error) {
-    if (error.all) {
-      $('.bag-text').parent().addClass('error');
-      $('.bag-text').parent().append(err_template);
-      $('.awb-text').parent().addClass('error');
-      $('.awb-text').parent().append(err_template);
-      return;
-    }
-
     if (error.bag) {
       $('.bag-text').parent().addClass('error');
       $('.bag-text').parent().append(err_template);
     }
 
-    if (error.awb) {
-      $('.awb-text').parent().addClass('error');
-      $('.awb-text').parent().append(err_template);
+    if (error.cour) {
+      $('#courier').parent().addClass('error');
+      $('#courier').parent().parent().append(err_template);
     }
-
   }
 
   function resetErrorView() {
     $('.bag-text').parent().removeClass('error');
-    $('.awb-text').parent().removeClass('error');
+    $('#courier').parent().parent().removeClass('error');
     $('.error-msg').remove();
   }
 
   function resetTable() {
-    marker = 0;
     collections = [];
 
     $('#arrival-table').DataTable().clear();
@@ -268,14 +231,13 @@
     });
     $('#arrival-table').show();
 
-    $('.awb-text').val('');
     $('.bag-text').val('');
     $('.bag-text').focus();
   }
 
-  var modal_template = $('#confirmation-modal-template').html();
+  /*var modal_template = $('#confirmation-modal-template').html();
   
-  /*function confirmationModal() {
+  function confirmationModal() {
     
     $('#modal-container').empty();
     $('#modal-container').html(modal_template);
@@ -283,7 +245,6 @@
     
     resetTable();
     
-
   }*/
 
 </script>
