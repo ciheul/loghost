@@ -740,24 +740,44 @@ class OutboundApi(View):
         outbound_status = ItemStatus.objects.get(code__iexact='OB')
 
         print 'test : ' + str(request.POST.getlist('bag_id_list'))
+        print 'shipment_id: '+ request.POST['shipment_id']
+        
+        runsheet = Shipment(
+                transportation_id=request.POST['shipment_id'])
+        runsheet.origin_site_id = user.site.id
+        runsheet.destination_site_id = request.POST['destination_id']
+        runsheet.save()
+        
+        bag_number_list = []
+        bag_id_list = []
+        
+        for item in request.POST.getlist('bag_id_list'):
+            bag_number_list.append(item)
+        
         try:
-            
+            bag_id_qs = Bag.objects.filter(number__in=bag_number_list)
+            for bag in list(bag_id_qs):
+                bag_id_list.append(bag.id)
+
             bag_item_qs = BagItem.objects.filter(
-                            bag_id__in=request.POST.getlist('bag_id_list'))
+                            bag_id__in=bag_id_list)
             awb_id_list = []
             for bag_item in list(bag_item_qs):
                 awb_id_list.append(bag_item.awb_id)
 
             #insert to item_bag_shipment
             item_bag_list = []
-            for bag_id in request.POST.getlist('bag_id_list'):
+            for bag_id in bag_id_list:
+                print request.POST['shipment_id']
                 item_bag_list.append(ItemBagShipment(
                                         shipment_id=request.POST['shipment_id'],
                                         bag_id=bag_id))
             ItemBagShipment.objects.bulk_create(item_bag_list)
 
             #insert to item shipment
+            print str(request.POST.getlist('awb_list'))
             awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
+            print ' stl q : ' + str(list(awb_qs))
             item_shipment_list = []
             for item in list(awb_qs):
                 awb_id_list.append(item.id)
@@ -782,6 +802,7 @@ class OutboundApi(View):
                                     status=outbound_status.name  \
                                             + ' [' + user.site.name + ']' ))
             History.objects.bulk_create(history_list)
+            print 'list' + str(history_list)
 
         except:
             print traceback.format_exc()
@@ -934,9 +955,6 @@ class ItemProcessed(View):
 #user_id, bag_number, awb_list
 class BaggingApi(View):
     def post(self, request):
-        #print 'user_d : ' + str( request.POST['user_id'])
-        #print 'bag_number :' + str( request.POST['bag_number'])
-        #print 'list : ' + str(request.POST.getlist('awb_list'))
         if not request.POST['user_id'] \
                 or not request.POST['bag_number'] \
                 or not request.POST.getlist('awb_list'):
@@ -953,8 +971,8 @@ class BaggingApi(View):
         processed_status = ItemStatus.objects.get(code='PR')
         
         # clear previous assignment
-        #if created is False:
-        #    BagItem.objects.filter(bag_id=bag.id).delete()
+        if created is False:
+            BagItem.objects.filter(bag_id=bag.id).delete()
 
         try:
             awb_qs = AWB.objects.filter( \

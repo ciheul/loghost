@@ -5,11 +5,11 @@
   <h1 class="ui header ui form" style="margin-bottom:1em">
     <div class="fields">
       <div class="thirteen wide field">
-        Arrival Item
+        Arrival Bag
       </div>
 
       <div class="three wide field">
-        <button id="confirm-bag-awbs" class="ui button green right floated">Confirm Items</button>
+        <button id="confirm-bag-awbs" class="ui button green right floated">Confirm Bag</button>
       </div>
 
     </div>
@@ -19,7 +19,7 @@
   <form class="ui form" id="submit-bag-form">
     <div class="fields">
       <div class="six wide field">
-        <input class="bag-text" type="text" name="awb" placeholder="AWB">
+        <input class="bag-text" type="text" name="bag_id" placeholder="BAG_ID">
       </div>
       <div class="two wide field">
         <button class="ui button blue" type="submit"><i class="shopping basket icon"></i> Submit</button>
@@ -30,7 +30,7 @@
   <table id="arrival-table" class="ui celled table">
     <thead>
       <tr>
-        <th>AWB</th>
+        <th>Bag ID</th>
         <th>Status</th>
         <th>Action</th>
       </tr>
@@ -116,11 +116,11 @@
     resetErrorView();
     
     marker = 1;
-    var data = $('#submit-awb-form').serializeObject();
+    var data = $('#submit-bag_id-form').serializeObject();
     if ($('.bag-text').val() === '') {
       error_msg['bag'] = true;
       setErrorView(error_msg);
-      console.log('empty awb value');
+      console.log('empty bag_id value');
       return false;
     }
 
@@ -161,19 +161,17 @@
 
     console.log('data to send --> ', collections);
     
-     $.ajax({
+    $.ajax({
        url: "{% url 'api-inbound' %}", 
        method: "POST",
-       dataType: 'json',
-       traditional:true,
        data: {
-            user_id: {{ user_id }},
+       user_id = {{ user_id }}
             awb_list: collections
        },
 
      }).done(function(response) {
-           resetTable();
-           collections = [];
+            resetTable();
+            collections = [];
      });
 
     return false;
