@@ -97,7 +97,8 @@ class ManualScanManagementView(StaffView):
 class BaggingManagementView(StaffView):
     def get(self, request):
         context = {
-            'bagging_active': 'active'
+            'bagging_active': 'active',
+            'user_id': request.user.id
         }
         return render(request, 'core/bagging-management.html', context)
 

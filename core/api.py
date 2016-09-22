@@ -934,6 +934,9 @@ class ItemProcessed(View):
 #user_id, bag_number, awb_list
 class BaggingApi(View):
     def post(self, request):
+        #print 'user_d : ' + str( request.POST['user_id'])
+        #print 'bag_number :' + str( request.POST['bag_number'])
+        #print 'list : ' + str(request.POST.getlist('awb_list'))
         if not request.POST['user_id'] \
                 or not request.POST['bag_number'] \
                 or not request.POST.getlist('awb_list'):
@@ -950,8 +953,8 @@ class BaggingApi(View):
         processed_status = ItemStatus.objects.get(code='PR')
         
         # clear previous assignment
-        if created is False:
-            BagItem.objects.filter(bag_id=bag.id).delete()
+        #if created is False:
+        #    BagItem.objects.filter(bag_id=bag.id).delete()
 
         try:
             awb_qs = AWB.objects.filter( \

@@ -168,7 +168,7 @@
     ] ).draw( true );
     
     // adding to new Collection
-    collections.push($('.bag-text').val());
+    collections.push($('.awb-text').val());
 
     $('.awb-text').val('');
     $('.awb-text').focus(); 
@@ -202,19 +202,25 @@
       return false;
     }
 
+    //collections.push($('.bag-text').val());
     console.log('data to send --> ', collections);
+    console.log('bag to send --> ', $('.bag-text').val())
     
-    resetTable();
-    // $.ajax({
-    //   'url': "{% url 'api-inbound' %}", 
-    //   'method': "POST",
-    //   'data': {
-    //     'awbs:' collections
-    //   },
+    $.ajax({
+      url: "{% url 'api-bagging' %}", 
+      method: "POST",
+      traditional:true,
+      dataType: 'json',
+      data: {
+        awb_list: collections,
+        user_id: {{user_id}},
+        bag_number: $('.bag-text').val()
+      },
 
-    // }).done(function(response) {
-    //   collections = [];
-    // });
+    }).done(function(response) {
+      collections = [];
+        resetTable();
+    });
 
     return false;
   });
