@@ -8,6 +8,7 @@ from django.views.generic import View
 from core.models import City, AWB, Service, Site, ItemStatus, ItemSite, SiteType, GoodType, PaymentType
 from core.models import Transportation, TransportationType 
 
+
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         return self.request.user.is_staff

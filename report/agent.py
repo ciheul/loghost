@@ -176,7 +176,7 @@ class AgentReport:
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = 'filename="%s"' % filename
 
-        barcode_path = self.generate_barcode(item.awb)
+        barcode_path = self.generate_barcode(item.awb.number)
 
         c = canvas.Canvas(response, pagesize=landscape(A4))
 
@@ -246,7 +246,7 @@ class AgentReport:
         c.drawString(350, 235, "Tinggi %10s" % str(item.height))
         c.drawString(350, 220, "Jumlah %7s" % str(item.quantity))
         
-        c.drawString(600, 380, "No. AWB : " + item.awb)
+        c.drawString(600, 380, "No. AWB : " + item.awb.number)
         c.drawString(600, 365, "Layanan : " + item.tariff.service.name)
         c.drawString(600, 350, "Jenis Kiriman : " + item.good_type.name.upper())
         c.drawString(600, 280, "Biaya Kirim : (IDR) %11s" % str('{:,}'.format(item.price)))

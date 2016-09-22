@@ -6,6 +6,8 @@ from django.views.generic import View
 from core.models import City, GoodType, PaymentType, Service
 from report  import coree
 from report import agentnew
+from report.agent import AgentReport
+
 
 class AgentView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -58,25 +60,25 @@ class ReportView(AgentView):
 class BlankReportView(AgentView):
     def post(self, request):
         report = coree.Report()
-        response = report.run()
+        response = report.run(request)
         return response
 
 class NewReportView(AgentView):
     def post(self, request):
         report = agentnew.Report()
-        response = report.run()
+        response = report.run(request)
         return response
 
 class DeliveryReportView(AgentView):
     def post(self, request):
         report = agentnew.DeliveryReport()
-        response = report.run()
+        response = report.run(request)
         return response
 
 class ManifestReportView(AgentView):
     def post(self, request):
         report = coree.ManifestReport()
-        response = report.run()
+        response = report.run(request)
         return response
 
 class ProfileView(AgentView):
