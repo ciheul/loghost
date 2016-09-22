@@ -16,8 +16,6 @@ from core.logics import generate_awb
 
 import traceback, random, string
 
-from report.site import SiteReport
-
 class TariffCreateApi(View):
     def post(self, request):
         if not request.POST['origin'] \
