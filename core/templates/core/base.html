@@ -25,22 +25,33 @@
 
         <div id="cross-check" class="ui dropdown icon item" tabindex="0" style="color:white;">
           
-          <span class='nav-point'>Cross Check</span><i class="dropdown icon"></i>
+          <span class='nav-point'>Shipping</span><i class="dropdown icon"></i>
           <div class="menu transition hidden" tabindex="-1">
             <div class="{{ manualscan_active }} item">
-              <a class="" href="{% url 'core-manualscan' %}" >Manual Scan</a>
+              <a class="" href="{% url 'core-manualscan' %}">Manual Scan</a>
+            </div>
+            <div class="divider"></div>
+            <div class="header">
+              Shipping
+            </div>
+            <div class="{{ arrival_active }} item">
+              <a class="" href="{% url 'core-arrival' %}">Arrival</a>
             </div>
             <div class="{{ bagging_active }} item">
               <a class="" href="{% url 'core-bagging' %}">Bagging</a>
             </div>
             <div class="divider"></div>
             <div class="header">
-              Manifest - Airport
+              Outbound - Uplifting
             </div>
             <div class="{{ manifesting_active }} item">
               <a class="" href="{% url 'core-manifest' %}">Manifest</a>
             </div>
+            <div class="{{ airport_active }} item">
+              <a class="" href="{% url 'core-airport' %}">Airport</a>
+            </div>
           </div>
+          
         </div>
 
 

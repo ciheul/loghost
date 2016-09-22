@@ -22,6 +22,10 @@ urlpatterns = [
         name='core-consigment'),
     url(r'^management/manifest/$', views.ManifestingManagementView.as_view(),
         name='core-manifest'),
+    url(r'^management/airport/$', views.AirportManagementView.as_view(),
+        name='core-airport'),
+    url(r'^management/arrival/$', views.ArrivalManagementView.as_view(),
+        name='core-arrival'),
 
     # API
     url(r'^api/item/insert/$',api.ItemInsertApi.as_view(), 

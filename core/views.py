@@ -101,6 +101,13 @@ class BaggingManagementView(StaffView):
         }
         return render(request, 'core/bagging-management.html', context)
 
+class ArrivalManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'arrival_active': 'active'
+        }
+        return render(request, 'core/arrival.html', context)
+
 class ConsignmentNoteManagementView(StaffView):
     def get(self, request):
         context = {
@@ -122,4 +129,13 @@ class ManifestingManagementView(StaffView):
             'transporttype': TransportationType.objects.all().order_by('name')
         }
         return render(request, 'core/manifesting.html', context)
+
+class AirportManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'airport_active': 'active',
+            'transports': Transportation.objects.all().order_by('identifier'),
+            'cities': City.objects.all().order_by('name'),
+        }
+        return render(request, 'core/airport.html', context)
 
