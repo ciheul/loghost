@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from core.models import City, AWB, Service, Site, ItemStatus, ItemSite, SiteType, GoodType, PaymentType
+from core.models import City, AWB, Service, Site, ItemSite, SiteType, GoodType, PaymentType
 from core.models import Transportation, TransportationType 
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -102,10 +102,11 @@ class BaggingManagementView(StaffView):
 
 class ArrivalManagementView(StaffView):
     def get(self, request):
+        awb_status = AWB.objects.get(number=request.get('awb_id'))
         context = {
             'arrival_active': 'active',
             'user_id': request.user.id,
-            'status': ItemStatus.objects.get(id=3)
+            'status': awb_status.status
         }
         return render(request, 'core/arrival.html', context)
 

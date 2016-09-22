@@ -962,10 +962,10 @@ class BaggingApi(View):
             
 #user_id, awb_list
 class InboundApi(View):
-    
+   
     def post(self, request):
         if not request.POST['user_id'] \
-                or not request.POST.getlist('awb_list') : 
+                 or not request.POST.getlist('awb_list') : 
                     response = {
                         'success': -1,
                         'message': "Parameters are not complete",
@@ -990,16 +990,21 @@ class InboundApi(View):
 
         #TODO distinct awb and bag_id
         # check whether parameter is indeed awb or bag_id
-        bag_id_list = []
+        bag_number_list = []
+        bag_id_list=[]
         awb_list = []
         
         for item in request.POST.getlist('awb_list'):
             if item.startswith('BAG'):
-                bag_id_list.append(item)
+                bag_number_list.append(item)
             else:
                 awb_list.append(item)
 
         try:
+            bag_id_qs = Bag.objects.filter(number__in=bag_number_list)
+            for bag in list(bag_id_qs):
+                bag_id_list.append(bag.id)
+
             bag_item_qs = BagItem.objects.filter(bag_id__in=bag_id_list)
             
             awb_id_list = []
