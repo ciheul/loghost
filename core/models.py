@@ -241,6 +241,7 @@ class Courier(models.Model):
     name = models.CharField(max_length=30)
     phone = models.CharField(max_length=20)
     transportation_type = models.ForeignKey('TransportationType')
+    city = models.ForeignKey('City', null=True, blank=True)
     
     def __unicode__(self):
         return self.name
@@ -248,9 +249,10 @@ class Courier(models.Model):
 
 class Delivery(models.Model):
     awb = models.ForeignKey('AWB')
-    courier = models.ForeignKey('Courier')
-    forwarder = models.ForeignKey('Forwarder')
+    courier = models.ForeignKey('Courier', null=True, blank=True )
+    forwarder = models.ForeignKey('Forwarder',  null=True, blank=True)
     status = models.ForeignKey('ItemStatus', null=True, blank=True)
+    site = models.ForeignKey('Site', null=True, blank=True)
     receiver_name = models.CharField(max_length=30, null=True, blank=True)
     receive_date = models.DateTimeField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -262,7 +264,14 @@ class Forwarder(models.Model):
     code = models.CharField(max_length=5)
     address = models.CharField(max_length=50)
     phone = models.CharField(max_length=12)
+    city = models.ForeignKey('City', null=True, blank=True)
 
     def __unicode__(self):
         return self.name
+
+class Incident(models.Model):
+    awb = models.ForeignKey('AWB')
+    site = models.ForeignKey('Site', null=True, blank=True)
+    information = models.CharField(max_length=200)
+    status = models.ForeignKey('ItemStatus')
 
