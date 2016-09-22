@@ -16,7 +16,6 @@ from core.logics import generate_awb
 
 import traceback, random, string
 
-from report.site import SiteReport
 
 class TariffCreateApi(View):
     def post(self, request):
@@ -475,6 +474,8 @@ class UserDeleteApi(View):
 
 class ItemCreateApi(View):
     def post(self, request):
+        # form validation
+        # TODO error handling
         if not request.POST['sender_name'] \
                 or not request.POST['sender_address'] \
                 or not request.POST['sender_city'] \
@@ -493,6 +494,32 @@ class ItemCreateApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
 
+        # check route
+        try:
+            tariff = Tariff.objects.get(
+                origin_id=int(request.POST['sender_city']),
+                destination_id=int(request.POST['receiver_city']),
+                service_id=int(request.POST['service']))
+        except Tariff.DoesNotExist:
+            response = {
+                'success': -1,
+                'message': "No route. Ensure tariff is available",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
+        sd_item_status = ItemStatus.objects.get(code__exact='SD')
+
+        # TODO create AWB Generator
+        awb = self.get_awb_number(sd_item_status.id)
+        if awb is None:
+            response = {
+                'success': -1,
+                'message': 'Awb generation failed'
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json')
+
         # normalize
         weight = request.POST['weight']
         length = request.POST['length']
@@ -509,21 +536,6 @@ class ItemCreateApi(View):
         if good_value == '': good_value = 0
         if sender_zip_code == '': sender_zip_code = None
         if receiver_zip_code == '': receiver_zip_code = None
-
-        try:
-            tariff = Tariff.objects.get(
-                origin_id=int(request.POST['sender_city']),
-                destination_id=int(request.POST['receiver_city']),
-                service_id=int(request.POST['service']))
-        except Tariff.DoesNotExist:
-            response = {
-                'success': -1,
-                'message': "No route. Ensure tariff is available",
-            }
-            return HttpResponse(json.dumps(response),
-                                content_type='application/json') 
-
-        awb = generate_awb()
 
         # TODO error handling when site already exists
         # write to database
@@ -562,15 +574,16 @@ class ItemCreateApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
 
-        status_to_be_collected = ItemStatus.objects.get(
-            name__iexact='TO BE COLLECTED')
+        # insert to item_site.
+        # if agent inserts the item, the physical item is still in agent office
+        # if branch office inserts the item, indeed, the physical item has
+        # been received in the sorting facility/branch office
         try:
-            #insert to item_site
-            item_site = ItemSite(item=item,
+            item_site = ItemSite(awb=awb,
                                  site=request.user.site,
                                  received_at=timezone.now(),
                                  received_by=request.user.fullname,
-                                 item_status=status_to_be_collected)
+                                 item_status=sd_item_status)
             item_site.save()
         except DatabaseError as e:
             response = {
@@ -581,9 +594,11 @@ class ItemCreateApi(View):
                                 content_type='application/json') 
 
         try:
-            status = "SHIPMENT RECEIVED BY COUNTER [%s]" \
-                % (request.user.site.city.name.upper()) 
-            history = History(item=item, status=status)
+            # status = "SHIPMENT RECEIVED BY COUNTER [%s]" \
+            #     % (request.user.site.city.name.upper()) 
+            history = History(awb=awb,
+                              status=sd_item_status.name \
+                                     + ' [' + request.user.site.name + ']')
             history.save()
         except DatabaseError:
             response = {
@@ -593,9 +608,29 @@ class ItemCreateApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
 
-        response = { 'success': 0, 'awb': awb }
+        response = { 'success': 0, 'awb': awb.number }
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
+
+    # TODO maybe this method should be refactored out
+    # so that other methods can call
+    # get available awb that has no status in it
+    def get_awb_number(self, status_id):
+        awb_number = None
+        try:
+            # TODO perhaps this line sucks memory a lot
+            awb_number = AWB.objects.filter(status__isnull=True).order_by('pk')[0]
+            # update status of awb to SD
+            awb_number.status_id = status_id
+            awb_number.save()
+        except:
+            # print traceback.format_exc()
+            return None
+        return awb_number
+
+    def release_awb(self, awb):
+        awb.status = None
+        awb.save()
 
 
 class ItemTrackApi(View):
