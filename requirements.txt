@@ -7,3 +7,4 @@ requests[security]==2.11.1
 reportlab==3.3.0
 simplejson==3.8.2
 yolk==0.4.3
+django_bulk_update==1.1.10

@@ -226,8 +226,8 @@
     }
 
     // adding to new Collection
-    //collections.push(dataPushed);
-    collections.push(JSON.stringify(dataPushed));
+    collections.push(dataPushed);
+    //collections.push(JSON.stringify(dataPushed));
 
     $('.bag-text').val('');
     $('#date').val('');
@@ -259,7 +259,7 @@
       traditional: true,
       dataType: 'json',
       data: {
-        data_list: collections,
+        data: JSON.stringify(collections),
         user_id: {{user_id}}
       },
 

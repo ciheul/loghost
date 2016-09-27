@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from bulk_update.manager import BulkUpdateManager
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -71,6 +72,7 @@ class ItemStatus(models.Model):
 class AWB(models.Model):
     number = models.CharField(max_length=30,unique=True)
     status = models.ForeignKey('ItemStatus', null=True, blank=True)
+    objects = BulkUpdateManager()
 
     def __unicode__(self):
         return self.number
@@ -259,6 +261,7 @@ class Delivery(models.Model):
     receive_date = models.DateTimeField(null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    objects = BulkUpdateManager()
 
 
 class Forwarder(models.Model):

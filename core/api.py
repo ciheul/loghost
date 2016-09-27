@@ -6,6 +6,8 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.views.generic import View
 from datetime import datetime
+
+from bulk_update.helper import bulk_update
 import simplejson as json
 
 from account.models import CustomUser
@@ -1461,9 +1463,8 @@ class ItemDeliveryCreateApi(View):
 # receiver_name, receive_date
 class ItemDeliveryUpdateApi(View):
     def post(self, request):
-        print 'data list : ' + str( request.POST.getlist('data_list'))
         if not request.POST['user_id'] \
-                or not request.POST.getlist('data_list'):
+                or not request.POST['data']:
             response = {
                         'success': -1,
                         'message': "Parameters are not complete",
@@ -1472,7 +1473,9 @@ class ItemDeliveryUpdateApi(View):
                         content_type='application/json')
 
         
+        data_list = json.loads(request.POST['data'])
         user = None
+
         delivery_status = None
         try:
             user = CustomUser.objects.get(pk=request.POST['user_id'])
@@ -1495,43 +1498,9 @@ class ItemDeliveryUpdateApi(View):
             status_delivery_id.append(status.id)
 
         try:
-            awb = AWB.objects.get(number=request.POST['awb'])
-            if request.POST['status_code'] is 'SC' \
-                    or request.POST['status_code'] is 'OK':
-                Delivery.objects.filter(site_id=user.site.id, 
-                                        awb_id=awb.id,
-                                        status_id__in=status_delivery_id) \
-                                .update(status_id=delivery_status.id,
-                                        receiver_name=request.POST['receiver_name'],
-                                        receive_date=self.convert_to_datetime(
-                                            request.POST['receive_date']))
-                awb.status_id=delivery_status.id
-                awb.save()
-                ItemSite.objects.filter(site_id=user.site.id,
-                                            item_status_id=status.id,
-                                            awb_id=awb.id) \
-                                .update(item_status_id=delivery_status.id)
-                
-                History(awb_id=awb.id, 
-                        status=delivery_status.name \
-                                + ' [' + request.POST['receiver_name'] + ' at ' \
-                                + request.POST['receive_date'] + ']').save()
-                
-            else:
-                Delivery.objects.filter(site_id=user.site.id, 
-                                        awb_id=awb.id,
-                                        status_id__in=statu_delivery_id) \
-                                .update(status_id=delivery_status.id)
-                awb.status_id=delivery_status.id
-                awb.save()
-                ItemSite.objects.filter(site_id=user.site.id,
-                                            item_status_id=status.id,
-                                            awb_id=awb.id) \
-                                    .update(item_status_id=delivery_status.id)
-
-                History(awb_id=awb.id, 
-                        status=delivery_status.name).save()
-
+            for data_dict in data_list:
+                self.update_delivery(data_dict)
+           
             
         except:
             print traceback.format_exc()
@@ -1549,6 +1518,46 @@ class ItemDeliveryUpdateApi(View):
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
        
+    def update_delivery(self, data_dict):
+        awb = AWB.objects.get(data_dict['awb'])
+        if data_dict['status_code'] is 'SC' \
+                or data_dict['status_code'] is 'OK':
+            Delivery.objects.filter(site_id=user.site.id, 
+                                    awb_id=awb.id,
+                                    status_id__in=status_delivery_id) \
+                            .update(status_id=delivery_status.id,
+                                    receiver_name=data_dict['receiver_name'],
+                                    receive_date=self.convert_to_datetime(
+                                        data_dict['receive_date']))
+            awb.status_id=delivery_status.id
+            awb.save()
+            ItemSite.objects.filter(site_id=user.site.id,
+                                        item_status_id=status.id,
+                                        awb_id=awb.id) \
+                            .update(item_status_id=delivery_status.id)
+            
+            History(awb_id=awb.id, 
+                    status=delivery_status.name \
+                            + ' [' + data_dict['receiver_name'] + ' at ' \
+                            + data_dict['receive_date'] + ']').save()
+                
+        else:
+            fail_status = ItemStatus.objects.get(code=data_dict['status_code'])
+            Delivery.objects.filter(site_id=user.site.id, 
+                                    awb_id=awb.id,
+                                    status_id__in=status_delivery_id) \
+                            .update(status_id=fail_status.id)
+            awb.status_id=delivery_status.id
+            awb.save()
+            ItemSite.objects.filter(site_id=user.site.id,
+                                        item_status_id=status.id,
+                                        awb_id=awb.id) \
+                                .update(item_status_id=fail_status.id)
+
+            History(awb_id=awb.id, 
+                    status=fail_status.name).save()
+
+
     # format date in string: Sep 1 2016  1:33PM
     def convert_to_datetime(self, date_in_string):
         return datetime.strptime(date_in_string, '%b %d %Y %I:%M%p')
