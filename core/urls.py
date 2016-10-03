@@ -66,7 +66,8 @@ urlpatterns = [
 
 
     # TARIFF
-    url(r'^api/tariff/$', api.TariffReadApi.as_view(), name='api-tariff-read'),
+    url(r'^api/tariff/$', api.TariffReadApi.as_view(),
+        name='api-tariff-read'),
     url(r'^api/tariff/create/$', api.TariffCreateApi.as_view(),
         name='api-tariff-create'),
     url(r'^api/tariff/update/$', api.TariffUpdateApi.as_view(),
@@ -77,7 +78,8 @@ urlpatterns = [
         name='api-tariff-check'),
 
     # AGENT
-    url(r'^api/agent/$', api.AgentReadApi.as_view(), name='api-agent-read'),
+    url(r'^api/agent/$', api.AgentReadApi.as_view(),
+        name='api-agent-read'),
     url(r'^api/agent/create/$', api.AgentCreateApi.as_view(),
         name='api-agent-create'),
     url(r'^api/agent/update/$', api.AgentUpdateApi.as_view(),
@@ -96,9 +98,10 @@ urlpatterns = [
         name='api-user-delete'),
 
     # ITEM
-    url(r'^api/item/create/$', api.ItemCreateApi.as_view(), name='api-item-create'),
-    url(r'^api/item/track/$', api.ItemTrackApi.as_view(), name='api-item-track'),
-
+    url(r'^api/item/create/$', api.ItemCreateApi.as_view(),
+        name='api-item-create'),
+    url(r'^api/item/track/$', api.ItemTrackApi.as_view(),
+        name='api-item-track'),
     url(r'^api/item/site/(?P<site_pk>\d+)/$', api.ItemSiteApi.as_view(),
         name='api-item-site'),
 

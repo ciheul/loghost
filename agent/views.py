@@ -81,6 +81,28 @@ class ManifestReportView(AgentView):
         response = report.run(request)
         return response
 
+class ShipmentView(AgentView):
+    # def get(self, request):
+    #     context = { 'shipment_active': 'active' }
+    #     return render(request, 'agent/inventory.html', context)
+
+    def post(self, request):
+        report = AgentReport()
+        response = report.print_shipment_marking(request)
+        return response
+
+
+class ShipmentReceiptView(AgentView):
+    # def get(self, request):
+    #     context = { 'shipment_active': 'active' }
+    #     return render(request, 'agent/inventory.html', context)
+
+    def post(self, request):
+        report = AgentReport()
+        response = report.print_shipment_receipt_multiple_address(request)
+        return response
+
+
 class ProfileView(AgentView):
     def get(self, request):
         context = { 'profile_active': 'active' }

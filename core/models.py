@@ -20,6 +20,9 @@ class City(models.Model):
 class Service(models.Model):
     name = models.CharField(max_length=20, unique=True)
 
+    def __unicode__(self):
+        return self.name
+
 
 class Tariff(models.Model):
     origin = models.ForeignKey(City, related_name='tariff_origin')
@@ -60,6 +63,9 @@ class PaymentType(models.Model):
 
 class GoodType(models.Model):
     name = models.CharField(max_length=20, unique=True)
+
+    def __unicode__(self):
+        return self.name
 
 
 class ItemStatus(models.Model):
@@ -161,7 +167,6 @@ class ItemSite(models.Model):
     description = models.CharField(max_length=100, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
-
     def __unicode__(self):
         return 'awb %s - site %s' %(self.awb, self.site)
 
@@ -184,6 +189,7 @@ class Shipment(models.Model):
 
     def __unicode__(self):
         return 'transportation %s' %(self.transportation)
+
 
 
 class Transportation(models.Model):

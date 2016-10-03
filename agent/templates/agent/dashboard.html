@@ -3,27 +3,18 @@
 {% block content %}
 <div class="ui main text container" style="margin-top:6em;margin-bottom:6em">
   <h1 class="ui header" style="margin-bottom:1em">Beranda</h1>
-  <!-- <h3 class="ui dividing header">Statistik</h3> -->
-  <!-- <div class="ui cards"> -->
-  <!--   <div class="card"> -->
-  <!--     <div class="content"> -->
-  <!--       <div class="header">Omzet</div> -->
-  <!--       <div class="meta">September</div> -->
-  <!--       <div class="ui tiny statistic"> -->
-  <!--         <div class="value">5.000.000</div> -->
-  <!--       </div> -->
-  <!--     </div> -->
-  <!--   </div> -->
-  <!--   <div class="card"> -->
-  <!--     <div class="content"> -->
-  <!--       <div class="header">Total Omzet</div> -->
-  <!--       <div class="meta">Sejak Mei 2014</div> -->
-  <!--       <div class="ui tiny statistic"> -->
-  <!--         <div class="value">120.000.000</div> -->
-  <!--       </div> -->
-  <!--     </div> -->
-  <!--   </div> -->
-  <!-- </div> -->
+
+  <h3 class="ui dividing header">Shipment Marking</h3>
+  <form action="{% url 'ag-shipment' %}" target="_blank" method="post">
+    {% csrf_token %}
+    <button class="mini ui primary button print-btn">Print Shipment Marking</button>
+  </form>
+
+  <h3 class="ui dividing header">Shipment Receipt More Than 5 Address</h3>
+  <form action="{% url 'ag-shipment-receipt' %}" target="_blank" method="post">
+    {% csrf_token %}
+    <button class="mini ui primary button print-btn">Print Shipment Receipt</button>
+  </form>
 
   <h3 class="ui dividing header">Berita</h3>
   <div class="ui divided items">
