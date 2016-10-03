@@ -20,7 +20,7 @@
     <div class="fields">
       <div class="eight wide field required">
         <label>Transportation</label>
-        <select class="ui fluid dropdown" name="transportation">
+        <select class="ui fluid dropdown" id="transportation" name="transportation">
           <option value="">Choose Transportation</option>
           {% for transport in transports %}
             <option value="{{ transport.id }}">{{ transport.identifier }}</option>
@@ -30,7 +30,7 @@
 
       <div class="eight wide field required">
         <label>SMU</label>
-        <input type="text" name="smu" placeholder="SMU">
+        <input type="text" id="smu" name="smu" placeholder="SMU">
       </div>
       
     </div>
@@ -418,19 +418,28 @@
     data.awbs = awbCollection;
     data.bags = bagCollection;
     console.log('send ajax here', data);
-    
-    // $.ajax({
-      // 
-    // }).done(function(response) {
+    console.log('smu --> ', $('#smu').val()); 
+    console.log('shipment_id --> ', $('#transportation option:selected').val());
+    $.ajax({
+        url: "{% url 'api-runsheet-update' %}",
+        method: "POST",
+        dataType: 'json',
+        traditional: true,
+        data: {
+            user_id: {{ user_id }},
+            shipment_id: $('#transportation option:selected').val(),  
+            smu: $('#smu').val(),
+        },        
+    }).done(function(response) {
+        if (response.success === -1) {
+            console.log('error inputs', response);
+            return false;
+        }
 
-      // if (response.success === -1) {
-      //   console.log('error inputs', response);
-      //   return false;
-      // }
-
-      // awbCollection = [];
-      // bagCollection = []; 
-    // });
+        awbCollection = [];
+        bagCollection = []; 
+        
+    });
     
     return false;
   });

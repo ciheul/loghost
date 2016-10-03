@@ -13,7 +13,7 @@ import simplejson as json
 from account.models import CustomUser
 from core.models import History, Item, ItemSite, ItemStatus, Site, Tariff, \
                         Shipment, ItemShipment, AWB, Bag, BagItem, \
-                        ItemBagShipment, Incident, Delivery
+                        ItemBagShipment, Incident, Transportation, Delivery
 from core.logics import generate_awb
 
 import traceback, random, string
@@ -610,7 +610,7 @@ class ItemCreateApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
 
-        response = { 'success': 0, 'awb': awb.number }
+        response = { 'success': 0, 'awb': awb.number, 'id': item.id}
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
 
@@ -748,6 +748,9 @@ class OutboundApi(View):
                 transportation_id=request.POST['shipment_id'])
         runsheet.origin_site_id = user.site.id
         runsheet.destination_site_id = request.POST['destination_id']
+        runsheet.sent_by = user.fullname
+        runsheet.sent_at = datetime.now()
+        runsheet.origin = user.site.address
         runsheet.save()
         
         bag_number_list = []
@@ -1058,7 +1061,10 @@ class InboundApi(View):
         bag_number_list = []
         bag_id_list=[]
         awb_list = []
-        
+        print("shipment id : " + request.POST['shipment_id']) 
+        runsheet = Shipment.objects.filter(
+                transportation_id=request.POST['shipment_id']).update(received_by = user.fullname, received_at = datetime.now(), destination = user.site.address)
+
         for item in request.POST.getlist('awb_list'):
             if item.startswith('BAG'):
                 bag_number_list.append(item)
@@ -1265,6 +1271,8 @@ class RunsheetCreateApi(View):
 #user_id, shipment_id, smu
 class RunsheetUpdateApi(View):
     def post(self, request):
+        print("shipment id : " + request.POST['shipment_id'])
+        print("smu : " + request.POST['smu'])
         if not request.POST['user_id'] \
                 or not request.POST['smu'] \
                 or not request.POST['shipment_id'] : 
@@ -1562,13 +1570,15 @@ class ItemDeliveryUpdateApi(View):
     def convert_to_datetime(self, date_in_string):
         return datetime.strptime(date_in_string, '%b %d %Y %I:%M%p')
         
-
 class PickUpReadApi(View):
     def get(self, request):
         agents = Site.objects.all()
         data = list()
+        pu_id = AWB.objects.get(code="PU")
+        print ("pick up status id : " + pu_id.id)
         for agent in agents:
-            items = ItemSite.objects.filter(site=agent.id)
+            # get item which status is PU (Pick Up)
+            items = ItemSite.objects.filter(site=agent.id).filter(awb_id=pu_id.id)
             t = {
                 'name': agent.name,
                 'type': agent.type.name,
@@ -1579,5 +1589,57 @@ class PickUpReadApi(View):
             data.append(t)
 
         response = { 'success':0, 'data': data}
+        return HttpResponse(json.dumps(response), content_type='application/json')
+
+class ManifestingListApi(View):
+    def get(self, request):
+        data = list()
+        item_shipments = Shipment.objects.all()
+        for item_shipment in item_shipments:
+            items = ItemShipment.objects.filter(shipment_id=item_shipment.id)
+            bags = ItemBagShipment.objects.filter(shipment_id=item_shipment.id)
+            d = {
+                'shipment_id':item_shipment.id,
+                'employee': item_shipment.sent_by,
+                'origin_site': item_shipment.origin_site.name,
+                'destination_site': item_shipment.destination_site.name,
+                'transportation': item_shipment.transportation.identifier,
+                'bagamount': len(bags),
+                'itemamount': len(items),
+            }
+            data.append(d)
+
+        response = {
+            'success': 0,
+            'data': data,
+        }
+
+        return HttpResponse(json.dumps(response), content_type='application/json')
+
+class AirportListApi(View):
+    def get(self, request):
+        data = list()
+        shipments = Shipment.objects.all()
+        for shipment in shipments:
+            transportations = Transportation.objects.filter(id = shipment.transportation.id, transportation_type = 2)
+            for transportation in transportations :
+                d = {
+                    'plane_id': shipment.id,
+                    'plane_identifier': transportation.identifier,
+                    'origin_city': transportation.origin_city.name,
+                    'departed_at': transportation.departed_at.strftime('%Y/%m/%d %H:%M:%S'),
+                    'destination_city': transportation.destination.name,
+                    'arrived_at': transportation.arrived_at.strftime('%Y/%m/%d %H:%M:%S'),
+                    'base': transportation.base,
+                    'smu' : shipment.smu,
+                    'operator': transportation.operator,
+                }
+                data.append(d)
+
+        response = {
+            'success': 0,
+            'data': data,
+        }
+ 
         return HttpResponse(json.dumps(response), content_type='application/json')
 

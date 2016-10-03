@@ -22,8 +22,10 @@ urlpatterns = [
         name='core-consigment'),
     url(r'^management/manifest/$', views.ManifestingManagementView.as_view(),
         name='core-manifest'),
+    url(r'^management/manifestinglist/$', views.ManifestingListView.as_view(), name='core-manifestinglist'),
     url(r'^management/airport/$', views.AirportManagementView.as_view(),
         name='core-airport'),
+    url(r'^management/airportlist/$', views.AirportListView.as_view(), name='core-airportlist'),
     url(r'^management/arrival/$', views.ArrivalManagementView.as_view(),
         name='core-arrival'),
     url(r'^management/arrivalbag/$', views.ArrivalBagManagementView.as_view(),
@@ -102,4 +104,14 @@ urlpatterns = [
 
     # PICK UP
     url(r'^api/site/pickup/', api.PickUpReadApi.as_view(), name='api-pickup-read'),
+
+    # SHIPMENT
+    url(r'^api/shipment/manifestlist/$', api.ManifestingListApi.as_view(), name='api-manifesting-list'),
+
+    # UP LIFTING
+    url(r'^api/uplifting/airportlist/$', api.AirportListApi.as_view(), name='api-airport-list'),
+    
+    # PRINT
+    url(r'^management/manifestinglist/print/(?P<shipment_pk>\d+)/$',views.PrintManifestView.as_view(), name='print-manifest-form'),
+    url(r'^management/inventory/print/(?P<item_id>\d+)/$', views.PrintFilledShipmentDetailView.as_view(), name='print-filledshipmentdetail-form'),
 ]

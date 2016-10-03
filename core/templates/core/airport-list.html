@@ -1,0 +1,142 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header" style="margin-bottom:1em">Airport Shipment List</h1>
+
+  <table id="report" class="ui celled table">
+    <thead>
+      <tr>
+        <th>Plane ID</th>  
+        <th>Origin</th>
+        <th>Departed</th>
+        <th>Destination</th>
+        <th>Arrived</th>
+        <th>Base</th>
+        <th>SMU</th>
+        <th>Operator</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+
+<div id="modal-container"></div>
+
+<script type="text/template" id="update-smu-modal-template">
+  <div class="ui small modal" id="update-smu-modal">
+    <i class="close icon"></i>
+    <div class="header">Update SMU <%= pk %> </div>
+    <div class="content">
+      <form class="ui form" id="update-smu-form">
+        <input type="hidden" id="pk" name="pk" value="<%= pk %>">
+        <div class="field">
+          <label>SMU<label>
+          <input type="text" id="smu"  name="smu" placeholder="SMU12345" value="<%= smu %>">
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="update-smu-button">Update SMU</div>
+    </div>
+  </div>
+</script>
+
+{% endblock %}
+
+{% block javascript %}
+<script>
+  $.fn.serializeObject = function()
+  {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+  };
+
+  // render table
+  $('#report').DataTable({
+    searching: false,
+    bLengthChange: false,
+    bInfo: false,
+    {# serverSide: true, #}
+    ajax: {
+        url: "{% url 'api-airport-list' %}",
+      type: 'GET'
+    },
+    columns: [
+      { data: 'plane_identifier', className: 'dt-left' },
+      { data: 'origin_city', className: 'dt-left' },
+      { data: 'departed_at', className: 'dt-left' },
+      { data: 'destination_city', className: 'dt-left' },
+      { data: 'arrived_at', className: 'dt-left' },
+      { data: 'base', className: 'dt-left' },
+      { data: 'smu', className: 'dt-left' },
+      { data: 'operator', className: 'dt-left' },
+      { data: 'action', className: 'dt-left' },  
+    ],
+    
+    columnDefs: [
+      {
+        targets: -1,
+        render: function(data, type, row, meta) {
+            return ''
+            + '<div class="mini ui primary button" data-action="update" data-planeid=' + row.plane_id + ' data-planeidentifier= ' + row.plane_identifier+ ' data-smu=' + row.smu + '>Update</div>'; 
+        }
+      }
+    ]
+  });
+
+  // add event to update button and delete button
+  $('#report tbody').click('button', function(e) {
+    var button = $(e.target);
+
+    // UPDATE AGENT
+    if (button.data('action') === 'update') {
+      // set up modal template and pass smu pk
+      var templateFunc = _.template($('#update-smu-modal-template').html());
+      var modalTemplate = templateFunc({
+        pk: button.data('planeidentifier'),
+        smu: button.data('smu'),
+      });
+
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#update-smu-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      $('#update-smu-button').click(function(e) {
+        var data = $('form').serializeObject();
+        data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+        $.ajax({
+          url: "{% url 'api-runsheet-update' %}",
+          method: 'POST',
+          data: {
+            'user_id': {{ user_id }},  
+            'shipment_id': button.data('planeid'),
+            'smu': $('#smu').val(),
+          },
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+
+      // set dropdown to rendered template
+      $('.dropdown').dropdown();
+    }  
+  });
+</script>
+{% endblock %}
