@@ -434,6 +434,7 @@
         },    
        
     }).done(function(response) {
+        resetTable();        
         if (response.success === -1) {
             console.log('error inputs', response);
             return false;
@@ -487,6 +488,36 @@
     $('#add-transportation-form').submit();
   });
 
+function resetTable() {
+    marker = 0;
+    collections = [];
+
+    $('#table-awb').DataTable().clear();
+    $('#table-awb').hide();
+    $('#table-awb').DataTable().destroy();
+    
+    $('#table-awb').DataTable({
+      searching: false,
+      bLengthChange: false,
+      bInfo: false,
+    });
+    $('#table-awb').show();
+    
+    $('#table-bag').DataTable().clear();
+    $('#table-bag').hide();
+    $('#table-bag').DataTable().destroy();
+    
+    $('#table-bag').DataTable({
+      searching: false,
+      bLengthChange: false,
+      bInfo: false,
+    });
+    $('#table-bag').show();
+
+    $('.awb-text').val('');
+    $('.bag-text').val('');
+    $('.bag-text').focus();
+  }
 
 </script>
 

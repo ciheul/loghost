@@ -22,13 +22,13 @@ class Report:
                                       fontSize=6,
                                       fontName='Helvetica')
 
-    def run(self, request):
+    def run(self, item_id):
         response = HttpResponse(content_type='appication/pdf')
         response['Content-Disposition'] = 'filename="BTform.pdf"'
 
         c = canvas.Canvas(response, pagesize=A4)
         
-        self.generate(c, request)
+        self.generate(c, item_id)
         c.showPage()
         c.save()
 
@@ -38,9 +38,8 @@ class Report:
         # x, y = x*unit, self.page_height - y*unit
         return x, y
 
-    def generate(self, c, request):
-        print request.POST
-        item = Item.objects.get(pk=request.POST['pk'])
+    def generate(self, c, item_id):
+        item = Item.objects.get(pk=item_id)
 
         c.translate(cm, cm)
 
@@ -75,7 +74,7 @@ class Report:
         c.setFont('Helvetica', 6)
         c.drawString(300, 772, "Layanan : ")
 
-        service = Service.objects.get(pk=item.tariff.id)
+        service = Service.objects.get(pk=item.tariff.service.id)
         c.setFont('Helvetica', 8)
         c.drawString(305, 760, '' + service.name.upper())
 
@@ -162,7 +161,7 @@ class Report:
         receiver_address = item.receiver_address.upper()
         receiver = Paragraph(receiver_address, self.n_style)
         receiver.wrapOn(c, 150, self.page_height)
-        receiver.drawOn(c, *self.coord(0, 500, mm))
+        receiver.drawOn(c, *self.coord(0, 630, mm))
 
         c.setFont('Helvetica', 6)
         c.drawString(0, 613, 'Attn :')

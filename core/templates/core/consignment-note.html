@@ -152,11 +152,6 @@
     </div>
 
     <div class="field">
-      <label>Instruction</label>
-      <input type="text" name="instruction" placeholder="">
-    </div>
-    
-    <div class="field">
       <label>Courier Name</label>
       <input type="text" name="courier_name" placeholder="">
     </div>
@@ -184,7 +179,7 @@
   
     <div class="field">
       <div class="ui primary right floated button submit-btn" tabindex="0"><i class="send outline icon"></i> Submit</div>
-      <div class="ui primary right floated button print-btn" tabindex="0"><i class="Print icon"></i> Print</div>
+      <div class="ui primary right floated button print-btn" tabindex="0"><i class="Print icon"></i> Print</form>
       <div class="ui primary right floated button shipment-marking-btn" tabindex="0"><i class="shop icon"></i> Shipment Marking</div>
     </div>
   </form>
@@ -248,7 +243,7 @@
 
   $('.submit-btn').click(function() {
     $('.submit-btn').attr('disabled', true);;
-    var data = $('form').serializeObject();
+    var data = $('#create-item-form').serializeObject();
     data.csrfmiddlewaretoken = Cookies.get('csrftoken');
 
     $.ajax({

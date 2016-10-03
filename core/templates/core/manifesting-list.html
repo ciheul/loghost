@@ -2,20 +2,17 @@
 
 {% block content %}
 <div class="ui main container" style="margin-top:6em;margin-bottom:6em">
-  <h1 class="ui header" style="margin-bottom:1em">Inventory</h1>
+  <h1 class="ui header" style="margin-bottom:1em">Manifest List</h1>
 
   <table id="report" class="ui celled table">
     <thead>
       <tr>
-        <th>Received At</th>
-        <th>AWB</th>
-        <th>Sender</th>
+        <th>Petugas</th>  
         <th>Origin</th>
         <th>Destination</th>
-        <th>Service</th>
-        {# <th>Good Type</th> #}
-        {# <th>Price (IDR)</th> #}
-        <th>Status</th>
+        <th>Transportation</th>
+        <th>Jumlah Bag</th>
+        <th>Jumlah Item</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -49,27 +46,25 @@
     bInfo: false,
     {# serverSide: true, #}
     ajax: {
-      url: "{% url 'api-item-site' site_pk=site.pk %}",
+        url: "{% url 'api-manifesting-list' %}",
       type: 'GET'
     },
     columns: [
-      { data: 'received_at', className: 'dt-left' },
-      { data: 'awb', className: 'dt-left' },
-      { data: 'sender', className: 'dt-left' },
-      { data: 'origin', className: 'dt-left' },
-      { data: 'destination', className: 'dt-left' },
-      { data: 'service', className: 'dt-left' },
-      {# { data: 'good_type', className: 'dt-left' }, #}
-      {# { data: 'price', className: 'dt-left' }, #}
-      { data: 'status', className: 'dt-left' },
-      { data: 'action', className: 'dt-left' },
+      { data: 'employee', className: 'dt-left' },
+      { data: 'origin_site', className: 'dt-left' },
+      { data: 'destination_site', className: 'dt-left' },
+      { data: 'transportation', className: 'dt-left' },
+      { data: 'bagamount', className: 'dt-left' },
+      { data: 'itemamount', className: 'dt-left' },
+      { data: 'action', className: 'dt-left' },  
     ],
+    
     columnDefs: [
       {
         targets: -1,
         render: function(data, type, row, meta) {
           return ''
-            + "<form target='_blank' method='post' action='/core/management/inventory/print/" + row.action + "/'>"
+            + "<form target='_blank' method='post' action='/core/management/manifestinglist/print/" + row.shipment_id + "/'>"
             {# + '"' + {% csrf_token %} + '"' #}
             + "  <input type='hidden' name='csrfmiddlewaretoken' value='" + Cookies.get('csrftoken')+ "'>" 
             + "  <input type='hidden' name='pk' value='" + row.action + "'>" 
@@ -78,8 +73,14 @@
         }
       }
     ]
-  });
+});
 
+//$.ajax(
+//url: '{% url "api-manifesting-list" %}',
+//type: 'GET'
+//).done(function(response) {
+//    console.log(response, 'hhh');
+//})
 {# $('#report tbody').click('button', function(e) { #}
 {#   console.log('print'); #}
 {#   console.log($(e.target).data('pk')); #}

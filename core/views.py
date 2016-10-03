@@ -6,7 +6,9 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from core.models import City, AWB, Service, Site, ItemStatus, ItemSite, SiteType, GoodType, PaymentType
-from core.models import Transportation, TransportationType, Courier, Forwarder
+from core.models import Shipment, Transportation, TransportationType, Courier, Forwarder
+
+from report import agentnew, coree
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -72,8 +74,10 @@ class PickUpManagementView(StaffView):
     def get(self, request):
         agents = Site.objects.all()
         data = list()
+        pu_id = ItemStatus.objects.get(code="PU")
+        print ("pick up status id : " + str(pu_id.id))
         for agent in agents:
-            items = ItemSite.objects.filter(site=agent.id)
+            items = ItemSite.objects.filter(site=agent.id).filter(item_status_id=pu_id.id)
             t = {
                     'dataagent' : agent,
                     'amount' : len(items),
@@ -138,7 +142,8 @@ class AirportManagementView(StaffView):
             'airport_active': 'active',
             'transports': Transportation.objects.all().order_by('identifier'),
             'cities': City.objects.all().order_by('name'),
-            'transport_type': TransportationType.objects.all().order_by('name')
+            'transport_type': TransportationType.objects.all().order_by('name'),
+            'user_id': request.user.id,
         }
         return render(request, 'core/airport.html', context)
 
@@ -193,3 +198,50 @@ class InventoryManagementView(StaffView):
     def get(self, request):
         context = { 'report_active': 'active', 'site': request.user.site }
         return render(request, 'core/inventory-management.html', context)
+
+class ManifestingListView(StaffView):
+    def get(self, request):
+        context = { 'manifestinglist_active': 'active', 'site': request.user.site,}
+        return render(request, 'core/manifesting-list.html', context)
+
+class AirportListView(StaffView):
+    def get(self, request):
+        context = { 
+            'airportlist_active': 'active',
+            'site': request.user.site,
+            'user_id': request.user.id,
+        }
+        return render(request, 'core/airport-list.html', context)
+
+
+class PrintManifestView(StaffView):
+    def get(self, request):
+        context = { 'printmanifest_active': 'active', 'site': request.user.site }
+        return render(request, 'core/manifesting-list.html', context)
+
+    def post(self, request, shipment_pk):
+        print shipment_pk
+        report = coree.ManifestReport()
+        response = report.run(shipment_pk)
+        return response
+
+class PrintConsigmentView(StaffView):
+    def get(self, request):
+        context = { 'printmanifest_active': 'active', 'site': request.user.site }
+        return render(request, 'core/manifesting-list.html', context)
+
+    def post(self, request, item_id):
+        print item_id
+        report = agentnew.Report()
+        response = report.run(item_id)
+        return response
+
+class PrintFilledShipmentDetailView(StaffView):
+    def get(self, request):
+        context = { 'printmanifest_active': 'active', 'site': request.user.site }
+        return render(request, 'core/consignment-note.html', context)
+
+    def post(self, request, item_id):
+        report = agentnew.Report()
+        response = report.run(item_id)
+        return response
