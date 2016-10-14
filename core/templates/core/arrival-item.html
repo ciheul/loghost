@@ -16,6 +16,18 @@
 
   </h1>
 
+  <form class="ui form" id="submit-shipment-form">
+    <div class="fields">
+      <div class="six wide field">
+        <input class="shipment_text" type="text" name="shipment_id" placeholder="SHIPMENT_ID">
+      </div>
+      <div class="two wide field">
+        <button class="ui button blue" type="submit"><i class="shipping icon"></i> Submit</button>
+        <!-- <input class="ui button blue" type="submit" value="Submit BAG"> -->
+      </div>
+    </div>
+  </form>
+ 
   <form class="ui form" id="submit-bag-form">
     <div class="fields">
       <div class="six wide field">
@@ -167,6 +179,7 @@
        dataType: 'json',
        traditional:true,
        data: {
+            shipment_id: $('.shipment_text').val(),
             user_id: {{ user_id }},
             awb_list: collections
        },

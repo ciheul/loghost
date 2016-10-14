@@ -1,12 +1,9 @@
 from datetime import datetime
 import os
 
-from core.models import Item
-from core.models import Service
-from core.models import Tariff
-
 from django.http import HttpResponse
 
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4, landscape
 from reportlab.lib.units import cm, mm, inch
 from reportlab.lib.utils import ImageReader
@@ -14,19 +11,19 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import Image, Paragraph, Table, TableStyle
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 
-class Report:
+from core.models import Item, Service, Tariff
+
+class AgentReport:
     def __init__(self):
         self.page_width, self.page_height = A4
-        self.n_style = ParagraphStyle(name='normal',
-                                      spaceAfter=50,
-                                      fontSize=6,
-                                      fontName='Helvetica')
+        self.n_style = ParagraphStyle(name='normal', spaceAfter=50, fontSize=6, fontName='Helvetica')
 
     def run(self, item_id):
-        response = HttpResponse(content_type='appication/pdf')
-        response['Content-Disposition'] = 'filename="BTform.pdf"'
-
-        c = canvas.Canvas(response, pagesize=A4)
+        filename = 'shipment-detail-form.pdf'
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'filename="%s"' % filename
+        
+        c = canvas.Canvas(response)
         
         self.generate(c, item_id)
         c.showPage()
@@ -39,6 +36,7 @@ class Report:
         return x, y
 
     def generate(self, c, item_id):
+        
         item = Item.objects.get(pk=item_id)
 
         c.translate(cm, cm)
@@ -199,7 +197,7 @@ class Report:
         table.drawOn(c, *self.coord(0, 570, mm))
 
         data = [
-                ['Jumlah', ': ' + str(item.quantity) , ''],
+            ['Jumlah', ': ' + str(item.quantity) , ''],
             ['', '', ''],
             ['Biaya Kirim', ': IDR ', str(item.price) + '.00'],
             ['Biaya Lain-lain', ': IDR', '0.00'],
@@ -505,6 +503,20 @@ class DeliveryReport:
 	c.setFont('Helvetica-Bold', 6)
         c.drawCentredString(475, 583, 'Ttd. Penerima')
         c.drawCentredString(475, 545, '(                                )')
+
+class PrintTest:
+    def test_print(self):
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'filename="test.pdf"'
+
+        p = canvas.Canvas(response)
+
+        p.drawString(100, 100, "hello world.")
+
+        p.showPage()
+        p.save()
+
+        return response
 
 
 if __name__ == '__main__':

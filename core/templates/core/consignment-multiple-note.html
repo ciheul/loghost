@@ -6,11 +6,6 @@
   <form class="ui form" id="create-item-form">
     <h1 class="ui header">Consignment Note</h1>
 
-    <div class="field">
-        <div class="ui primary right floated button multiple-input-btn"  onclick="location.href='{% url 'core-consigment-multiple' %}'"><i class="send outline icon"></i> Multiple Shipment</div>
-        <br>
-  </div>
-    
     <h3 class="ui dividing header">Sender</h3>
     <div class="fields">
       <div class="six wide required field">
@@ -181,8 +176,34 @@
       <label>Customer Number</label>
       <input type="text" name="customer_number" placeholder="">
     </div>
-    
+
     <div class="field">
+        <button class="ui primary right floated" type"submit"><i class="send outline icon"></i> Add Item</button>
+    </div>
+  </form>
+
+  <div class="field">
+    <table id="item-table" class="ui celled table">
+        <thead>
+            <tr>
+                <th>Sender</th>
+                <th>Receiver</th>
+                <th>Receiver Address</th>
+                <th>Goods Name</th>
+                <th>Weight</th>
+                <th>Height</th>
+                <th>Length</th>
+                <th>Width</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+  </div>
+
+  <div> <br> </div>
+
+  <div class="field">
       <div class="ui primary right floated button submit-btn" tabindex="0"><i class="send outline icon"></i> Submit</div>
       <div class="ui primary right floated button print-btn" tabindex="0"><i class="Print icon"></i> Print</div>
       <div class="ui primary right floated button shipment-marking-btn" tabindex="0"><i class="shop icon"></i> Shipment Marking</div>
@@ -213,7 +234,7 @@
   <div class="ui cards">
     <div class="card">
       <div class="content center aligned">
-        <div class="ui mini statistic">
+        <div class="ui small statistic">
           <div class="value"><%= awb %></div>
           <div class="label">AWB</div>
         </div>
@@ -231,6 +252,40 @@
 {% endblock %}
 
 {% block javascript %}
+<script type="text/javascript">
+    var sender_name_list = [];
+    var sender_address_list = [];
+    var sender_city_list = [];
+    var sender_zip_code_list = [];
+    var sender_phone_list = [];
+    var receiver_name_list = [];
+    var receiver_address_list = [];
+    var receiver_city_list = [];
+    var receiver_zip_code_list = [];
+    var receiver_phone_list = [];
+    var service_list = [];
+    var payment_type_list = [];
+    var good_name_list = [];
+    var good_value_list = [];
+    var good_type_list = [];
+    var weight_list = [];
+    var length_list = [];
+    var width_list = [];
+    var height_list = [];
+    var price_list = [];
+    var information_list = [];
+    var instruction_list = [];
+    //var tariff_list = [];
+
+    $(document).ready(function() {
+        $('table').DataTable({
+            searching: false,
+            bLengthChange: false,
+            bInfo: false,
+        });
+    });
+</script>
+
 <script>
   $.fn.serializeObject = function()
   {
@@ -251,16 +306,77 @@
 
   $('.submit-btn').click(function() {
     $('.submit-btn').attr('disabled', true);;
-    var data = $('form').serializeObject();
-    data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+    //var data = $('#create-item-form').serializeObject();
+    //data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+    console.log('sender address', sender_address_list);
+    console.log('sender city', sender_city_list);
+    console.log('receiver name', receiver_name_list);    
+    console.log('receiver address', receiver_address_list);
+    console.log('receiver city', receiver_city_list);
+    console.log('good_type', good_type_list);
+    console.log('payment_type', payment_type_list);
+    console.log('good_name', good_name_list);
+    console.log('price', price_list);
+    console.log('service', service_list);
 
     $.ajax({
-      url: "{% url 'api-item-create' %}",
+      url: "{% url 'api-item-create-multi' %}",
       method: 'POST',
       dataType: 'json',
       traditional: true,
-      data: data,
+      data: {
+        sender_name: sender_name_list,
+        sender_address: sender_address_list,
+        sender_city: sender_city_list,
+        sender_zip_code: sender_zip_code_list,
+        sender_phone: sender_phone_list,
+
+        receiver_name: receiver_name_list,
+        receiver_address: receiver_address_list,
+        receiver_city: receiver_city_list,
+        receiver_zip_code: receiver_zip_code_list,
+        receiver_phone: receiver_phone_list,
+
+        service: service_list,
+        payment_type: payment_type_list,
+        good_name: good_name_list,
+        good_value: good_value_list,
+        good_type: good_type_list,
+        weight: weight_list,
+        length: length_list,
+        width: width_list,
+        height: height_list,
+        price: price_list,
+        information: information_list,
+        instruction: instruction_list,
+        //tariff: tariff_list
+      },
     }).done(function(response) {
+      //resetTable();
+      sender_name_list = [];
+      sender_address_list = [];
+      sender_city_list = [];
+      sender_zip_code_list = [];
+      sender_phone_list = [];
+      receiver_name_list = [];
+      receiver_address_list = [];
+      receiver_city_list = [];
+      receiver_zip_code_list = [];
+      receiver_phone_list = [];
+      service_list = [];
+      payment_type_list = [];
+      good_name_list = [];
+      good_value_list = [];
+      good_type_list = [];
+      weight_list = [];
+      length_list = [];
+      width_list = [];
+      height_list = [];
+      price_list = [];
+      information_list = [];
+      instruction_list = [];
+    
+
       console.log(response);
 
       $('#message-container').empty();
@@ -279,7 +395,8 @@
 
         return;
       } else {
-        window.open("/core/management/consigment/print/" + response.id + "/", "_blank");
+        window.open("/core/management/consigment/multiple/print/" + response.id + "/", "_blank");
+
       }
       {# $('#create-item-form').removeClass('loading'); #}
       // set up modal template and pass agent pk
@@ -303,6 +420,7 @@
 
       // scroll to the bottom page to show error message
       window.scrollTo(0, document.body.scrollHeight);
+        
     });
   });
 
@@ -317,6 +435,85 @@
     $('input[name=weight]').attr('value', '1');
     $('input[name=price]').attr('value', '18000');
     $('input[name=good_name]').attr('value', 'Buku');
+</script>
+
+<script type="text/javascript">
+  $('#create-item-form').submit(function() {
+          
+   // resetErrorView();
+    
+    marker = 1;
+    var data = $('#create-item-form').serializeObject();
+    if (data.sender_name === '') {
+      error_msg['sender_name'] = true;
+      setErrorView(error_msg);
+      console.log('empty sender name');
+      return false;
+      }
+
+    if (data.receiver_name === '') {
+      error_msg['receiver_name'] = true;
+      setErrorView(error_msg);
+      console.log('empty receiver name');
+      return false;
+    }
+
+    if (data.receiver_address === '') {
+      error_msg['receiver_address'] = true;
+      setErrorView(error_msg);
+      console.log('empty receiver name');
+      return false;
+    }
+    
+    data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+    console.log('been submitted');
+    
+    var t = $('table').DataTable();
+    t.row.add( [
+            $('input[name=sender_name]').val(),
+            $('input[name=receiver_name]').val(),
+            $('input[name=receiver_address]').val(),
+            $('input[name=good_name]').val(),
+            $('input[name=weight]').val(),
+            $('input[name=height]').val(),
+            $('input[name=length]').val(),
+            $('input[name=width]').val(),
+    ] ).draw( true );
+    
+    // adding to new Collection
+    sender_name_list.push($('input[name=sender_name]').val());
+    sender_address_list.push($('input[name=sender_address]').val());
+    sender_city_list.push($('select[name=sender_city]').find('option:selected').val());
+    sender_zip_code_list.push($('input[name=sender_zip_code]').val());
+    sender_phone_list.push($('input[name=sender_phone]').val());
+    
+    receiver_name_list.push($('input[name=receiver_name]').val());
+    receiver_address_list.push($('input[name=receiver_address]').val());
+    receiver_city_list.push($('select[name=receiver_city]').find('option:selected').val());
+    receiver_zip_code_list.push($('input[name=receiver_zip_code]').val());
+    receiver_phone_list.push($('input[name=receiver_phone]').val());
+
+    service_list.push($('select[name=service]').find('option:selected').val()); 
+    payment_type_list.push($('select[name=payment_type]').find('option:selected').val());
+    good_name_list.push($('input[name=good_name]').val());
+    good_value_list.push($('input[name=good_value]').val());
+    good_type_list.push($('select[name=good_type]').find('option:selected').val());
+    weight_list.push($('input[name=weight]').val());
+    length_list.push($('input[name=length]').val());
+    width_list.push($('input[name=width]').val());
+    height_list.push($('input[name=height]').val());
+    price_list.push($('input[name=price]').val());
+    information_list.push($('input[name=note]').val());
+    instruction_list.push($('input[name=instruction]').val());
+    //tariff_list.push($('#tariff').val());
+    //$('.awb-text').val('');
+    //$('.awb-text').focus(); 
+
+    console.log('create-item-form', data);
+
+    return false;
+  });
 </script>
 
 <script type="text/javascript">
@@ -339,6 +536,61 @@
         $('.receiver_name').parent().removeClass('error');
         $('.receiver_address').parent().removeClass('error');
         $('.error-msg').remove();
+    }
+
+    function resetTable() {
+        sender_name_list = [];
+        sender_address_list = [];
+        sender_city_list = [];
+        sender_zip_code_list = [];
+        sender_phone_list = [];
+        receiver_name_list = [];
+        receiver_address_list = [];
+        receiver_city_list = [];
+        receiver_zip_code_list = [];
+        receiver_phone_list = [];
+        service_list = [];
+        payment_type_list = [];
+        good_name_list = [];
+        good_value_list = [];
+        good_type_list = [];
+        weight_list = [];
+        length_list = [];
+        width_list = [];
+        height_list = [];
+        price_list = [];
+        information_list = [];
+        instruction_list = [];
+        
+        $('table').DataTable().clear();
+        $('table').hide();
+        $('table').DataTable().destroy();
+
+        $('table').DataTable({
+            searching: false,
+            bLengthChange: false,
+            bInfo: false,
+        });
+        
+        $('table').show();
+
+        $('#sender_name').val('');
+        $('sender_address').val('');
+        $('#sender_city').val('');
+        $('#sender_zip_code').val('');
+        $('#sender_phone').val('');
+        $('#receiver_name').val('');
+        $('#receiver_address').val('');
+        $('#receiver_zip_code').val('');
+        $('#receiver_phone').val('');
+        $('#good_value').val('');
+        $('#weight').val('');
+        $('#length').val('');
+        $('#width').val('');
+        $('#height').val('');
+        $('#price').val('');
+        $('#information').val('');
+        $('#instruction').val('');
     }
 
 </script>

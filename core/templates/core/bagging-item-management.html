@@ -1,0 +1,255 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header">Bagging Item Management</h1>
+  <h3 class="ui header" style="margin-bottom:2em">{{ bag_number }}</h3>
+
+  <!-- <div class="ui small primary button" id="create-user-modal-btn">Create User</div>
+  -->
+
+  <table id="report" class="ui celled table">
+    <thead>
+      <tr>
+        <th>AWB Number</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+
+<div id="modal-container"></div>
+
+<script type="text/template" id="create-user-modal-template">
+  <div class="ui small modal" id="create-user-modal">
+    <i class="close icon"></i>
+    <div class="header">Create Agent</div>
+    <div class="content">
+      <form class="ui form" id="create-user-form">
+        <input type="hidden" name="site_pk" value="{{ site_pk }}">
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" name="name">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="text" name="email">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password">
+        </div>
+        <div class="field">
+          <label>Confirm Password</label>
+          <input type="password" name="confirm">
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="create-user-button">Create</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="update-user-modal-template">
+  <div class="ui small modal" id="update-user-modal">
+    <i class="close icon"></i>
+    <div class="header">Create Agent</div>
+    <div class="content">
+      <form class="ui form" id="update-user-form">
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" name="name">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="text" name="email">
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="update-user-button">Create</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="delete-user-modal-template">
+  <div class="ui small modal" id="delete-user-modal">
+    <i class="close icon"></i>
+    <div class="header">Delete User</div>
+    <div class="content delete-content"></div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui red button" id="delete-user-button" data-pk=<%= pk %>>Delete</div>
+    </div>
+  </div>
+</script>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  $.fn.serializeObject = function()
+  {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+  };
+
+  // render table
+  $('#report').DataTable({
+    searching: false,
+    bLengthChange: false,
+    bInfo: false,
+    {# serverSide: true, #}
+    ajax: {
+      url: "{% url 'api-bagging-list-item' %}",
+      data: {
+        bag_id: {{ bag_id }}
+      },
+      type: 'GET'
+    },
+    columns: [
+      { data: 'awb-number', className: 'dt-left' },
+      { data: 'action', className: 'dt-left' },
+    ],
+    columnDefs: [
+      {
+        targets: -1,
+        render: function(data, type, row, meta) {
+          return ''
+            + '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-name="' + row.name + '">Delete</div>';
+        }
+      }
+    ]
+  });
+
+  // add event to update button and delete button
+  $('#report tbody').click('button', function(e) {
+    var button = $(e.target);
+
+    // UPDATE AGENT
+    if (button.data('action') === 'update') {
+      // set up modal template and pass agent pk
+      var templateFunc = _.template($('#update-agent-modal-template').html());
+      var modalTemplate = templateFunc({
+        pk: button.data('pk'),
+        name: button.data('name'),
+        address: button.data('address'),
+        type_pk: button.data('type'),
+        city_pk: button.data('city'),
+      });
+
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#update-agent-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      $('#update-agent-button').click(function(e) {
+        var data = $('form').serializeObject();
+        data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+        $.ajax({
+          url: "{% url 'api-user-update' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+
+      // set dropdown to rendered template
+      $('.dropdown').dropdown();
+    }
+
+    // DELETE AGENT
+    if (button.data('action') === 'delete') {
+      console.log('delete');
+      // set up modal template and pass agent pk
+      var templateFunc = _.template($('#delete-user-modal-template').html());
+      var modalTemplate = templateFunc({ pk: button.data('pk') });
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#delete-user-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      // write content to modal
+      var content = "Apakah Anda yakin ingin menghapus user <b>" + button.data('name') + "</b>?";
+      $('.delete-content').append(content);
+
+      $('#delete-user-button').click(function(e) {
+        var data = {
+          csrfmiddlewaretoken: Cookies.get('csrftoken'),
+          user_pk: $(e.target).data('pk')
+        }
+
+        $.ajax({
+          url: "{% url 'api-user-delete' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+    }
+  });
+
+  // show create user modal
+  $('#create-user-modal-btn').click(function() {
+    var templateFunc = _.template($('#create-user-modal-template').html());
+    var modalTemplate = templateFunc();
+
+    $('#modal-container').append(modalTemplate);
+
+    $('#create-user-modal')
+      .modal({
+        onHidden: function() { $('.ui.dimmer').empty(); }
+      }).modal('show');
+
+    // set dropdown to rendered template
+    $('.dropdown').dropdown();
+
+    // CREATE USER
+    $('#create-user-button').click(function(e) {
+      e.preventDefault();
+
+      {# $('#create-user-form').addClass('loading'); #}
+
+      var data = $('form').serializeObject();
+      data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+      $.ajax({
+        url: "{% url 'api-user-create' %}",
+        method: 'POST',
+        data: data,
+      }).done(function(response) {
+        $('#create-user-form').removeClass('loading');
+
+        if (response.success === -1) {
+          console.log('fail');
+          return;
+        }
+
+        window.location.reload();
+      });
+    });
+  });
+</script>
+{% endblock %}

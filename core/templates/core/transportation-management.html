@@ -1,0 +1,435 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header ui form" style="margin-bottom:1em">
+    <div class="fields">
+      <div class="six wide field">
+        Transportation Management
+      </div>
+  </h1>
+
+  <div class="ui small primary button" id="create-transportation-modal-btn"> Create Transportation</div>
+
+  <table id="report" class="ui celled table">
+      <thead>
+          <tr>
+              <th>Transportation Type</th>
+              <th>Identifier</th>
+              <th>Operator</th>
+              <th>Base</th>
+              <th>Origin City</th>
+              <th>Destination City</th>
+              <th>Capacity</th>
+              <th>Action</th>
+          </tr>
+      </thead>
+  </table>
+</div>
+
+<div id="modal-container"></div>
+
+<script type="text/template" id="create-transportation-modal-template">
+  <div class="ui small modal" id="create-transportation-modal">
+    <i class="close icon"></i>
+    <div class="header">Add Transportation</div>
+    <div class="content">
+
+      <form class="ui form" id="create-transportation-form">
+        <h3 class="ui dividing header">Transpostation Info</h3>
+        <div class="fields">
+
+          <div class="eight wide field required">
+            <label>Transportation Type</label>
+            <select class="ui fluid dropdown" name="transportation_type">
+              <option value="">Transportation Type</option>
+              {% for type in transport_type %}
+                <option value="{{ type.pk }}">{{ type.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="eight wide field required">
+            <label>Operator</label>
+            <input type="text" name="operator" placeholder="operator">
+          </div>
+          
+          <div class="eight wide field required">
+            <label>Identifier</label>
+            <input type="text" name="identifier" placeholder="identifier">
+          </div>
+
+        </div>
+
+        <div class="fields">
+          <div class="eight wide field required">
+            <label>Departed at</label>
+            <select class="ui fluid dropdown" name="origin_city">
+              <option value="">Departed At</option>
+              {% for city in cities %}
+                <option value="{{ city.pk }}">{{ city.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="eight wide field required">
+            <label>Arrived at</label>
+            <select class="ui fluid dropdown" name="destination_city">
+              <option value="">Arrived at</option>
+              {% for city in cities %}
+                <option value="{{ city.pk }}">{{ city.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="ui dividing header">Additional Info</div>
+        </div>
+
+        <div class="fields">
+          <div class="eight wide field">
+            <label>Origin Note</label>
+            <input type="text" name="destination" placeholder="Optional">
+          </div>
+          <div class="eight wide field">
+            <label>Origin Destination Note</label>
+            <input type="text" name="destination" placeholder="Optional">
+          </div>
+          <div class="eight wide field">
+            <label>Capacity</label>
+            <input type="number" name="capacity" placeholder="100">
+          </div>
+          <div class="eight wide field">
+            <label>Base</label>
+            <input type="text" name="base" placeholder="">
+          </div>
+        </div>
+
+        <div class="field">
+          
+        </div>
+
+      </form>
+
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="create-transportation-button">Add</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="update-transportation-modal-template">
+  <div class="ui small modal" id="update-transportation-modal">
+    <i class="close icon"></i>
+    <div class="header">Update Transportation</div>
+    <div class="content">
+      <form class="ui form" id="update-transportation-form">
+        <input type="hidden" name="pk" value="<%= pk %>">
+        <h3 class="ui dividing header">Transpostation Info</h3>
+        <div class="fields">
+
+          <div class="eight wide field required">
+            <label>Transportation Type</label>
+            <select class="ui fluid dropdown" name="transportation_type">
+              <option value="">Transportation Type</option>
+              {% for type in transport_type %}
+              <option value="{{ type.pk }}" <% if (type_pk === {{ type.pk }}) { %>selected<% } %>>{{ type.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="eight wide field required">
+            <label>Operator</label>
+            <input type="text" name="operator" value="<%= operator %>">
+          </div>
+          
+          <div class="eight wide field required">
+            <label>Identifier</label>
+            <input type="text" name="identifier" value="<%= identifier %>">
+          </div>
+
+        </div>
+
+        <div class="fields">
+          <div class="eight wide field required">
+            <label>Departed at</label>
+            <select class="ui fluid dropdown" name="origin_city">
+              <option value="">Departed At</option>
+              {% for city in cities %}
+              <option value="{{ city.pk }}" <% if (origin_pk === {{ city.pk }}) { %>selected<% } %>>{{ city.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="eight wide field required">
+            <label>Arrived at</label>
+            <select class="ui fluid dropdown" name="destination_city">
+              <option value="">Arrived at</option>
+              {% for city in cities %}
+              <option value="{{ city.pk }}" <% if (destination_pk === {{ city.pk }}) { %>selected<% } %>>{{ city.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="ui dividing header">Additional Info</div>
+        </div>
+
+        <div class="fields">
+          <div class="eight wide field">
+            <label>Origin Note</label>
+            <input type="text" name="destination" placeholder="Optional">
+          </div>
+          <div class="eight wide field">
+            <label>Origin Destination Note</label>
+            <input type="text" name="destination" placeholder="Optional">
+          </div>
+          <div class="eight wide field">
+            <label>Capacity</label>
+            <input type="number" name="capacity" value="<%= capacity %>">
+          </div>
+          <div class="eight wide field">
+            <label>Base</label>
+            <input type="text" name="base" value="<%= base %>">
+          </div>
+        </div>
+
+        <div class="field">
+          
+        </div>
+
+      </form>
+
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="update-transportation-button">Update</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="delete-transportation-modal-template">
+    <div class="ui small modal" id="delete-transportation-modal">
+        <i class="close icon"></i>
+        <div class="header">Delete Transportation</div>
+        <div class="content delete-content"></div>
+        <div class="actions">
+            <div class="ui black deny button">Cancel</div>
+            <div class="ui red button" id="delete-transportation-button" data-pk=<%= pk %>>Delete</div>
+        </div>
+    </div>
+</script>
+  
+</script>
+
+{% endblock %}
+
+{% block javascript %}
+
+<script type="text/javascript">
+  var bagCollection = [];
+  var awbCollection = [];
+
+</script>
+
+<script>
+    $.fn.serializeObject = function()
+    {
+        var o = {};
+        var a = this.serializeArray();
+        $.each(a, function() {
+            if(o[this.name] !== undefined) {
+                if(!o[this.name].push) {
+                    o[this.name] = [o[this.name]];
+                }
+                o[this.name].push(this.value || '');
+            } else {
+                o[this.name] = this.value || '';
+            }
+        });
+        return o;
+    };
+
+    // render table
+    $('#report').DataTable({
+        searching: false,
+        bLengthChange: false,
+        bInfo: false,
+
+        ajax: {
+            url: "{% url 'api-transportation-read' %}",
+            type: 'GET'
+        },
+        columns: [
+            { data: 'transportation_type', className: 'dt-left' },
+            { data: 'identifier', className: 'dt-left' },
+            { data: 'operator', className: 'dt-left' },
+            { data: 'base', className: 'dt-left' },
+            { data: 'origin_city', className: 'dt-left' },
+            { data: 'destination_city', className: 'dt-left' },
+            { data: 'capacity', className: 'dt-left' },
+            { data: 'action', className: 'dt-left' },
+        ],
+        columnDefs: [
+            {
+                targets: -1,
+                render: function(data, type, row, meta) {
+                    return ''
+                    + '<div class="mini ui primary button" data-action="update" data-pk=' + row.action + ' data-type= ' + row.transportation_type_pk + ' data-origin=' + row.origin_pk + ' data-destination=' + row.destination_pk + ' data-identifier="' + row.identifier + '" data-operator="' + row.operator + '" data-base="' + row.base + '" data-capacity="' + row.capacity + '"> Update </div>'
+                    + '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-identifier="' + row.identifier + '"> Delete </div>';
+                }
+            }
+        ]
+    });
+
+    // add event to update button and delete button
+    $('#report tbody').click('button', function(e) {
+        var button = $(e.target);
+
+    // UPDATE AGENT
+    if (button.data('action') === 'update') {
+      // set up modal template and pass tariff pk
+      var templateFunc = _.template($('#update-transportation-modal-template').html());
+      var modalTemplate = templateFunc({
+        pk: button.data('pk'),
+        type_pk: button.data('type'),
+        origin_pk: button.data('origin'),
+        destination_pk: button.data('destination'),
+        base: button.data('base'),
+        operator: button.data('operator'),
+        capacity: button.data('capacity'),
+        identifier: button.data('identifier'),
+      });
+
+      console.log('type:', button.data('type'));
+      //console.log('modalTemplate :', modalTemplate);
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#update-transportation-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      $('#update-transportation-button').click(function(e) {
+        var data = $('form').serializeObject();
+        data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+        $.ajax({
+          url: "{% url 'api-transportation-update' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+
+      // set dropdown to rendered template
+      $('.dropdown').dropdown();
+    }
+
+    // DELETE AGENT
+    if (button.data('action') === 'delete') {
+      // set up modal template and pass tariff pk
+      var templateFunc = _.template($('#delete-transportation-modal-template').html());
+      var modalTemplate = templateFunc({ pk: button.data('pk') });
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#delete-transportation-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      // write content to modal
+      var content = "Are you sure to delete transportation with identifier <b>" + button.data('identifier') + "</b>?";
+
+      $('.delete-content').append(content);
+
+      $('#delete-transportation-button').click(function(e) {
+        var data = {
+          csrfmiddlewaretoken: Cookies.get('csrftoken'),
+          pk: $(e.target).data('pk')
+        }
+
+        $.ajax({
+          url: "{% url 'api-transportation-delete' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+    }
+});
+
+</script>
+
+<script type="text/javascript">
+  
+    $('#create-transportation-modal-btn').click(function() {
+        var templateFunc = _.template($('#create-transportation-modal-template').html());
+        var modalTemplate = templateFunc();
+    // $('#modal-container').html($('#add-transport-modal-template').html());
+        $('#modal-container').append(modalTemplate);
+
+        $('#create-transportation-modal').modal({
+            onHidden: function() { $('ui.dimmer').empty(); }
+        }).modal('show');
+
+        $('.dropdown').dropdown();
+
+        // CREATE TRANSPORTATION
+        $('#create-transportation-button').click(function(e) {
+            e.preventDefault();
+
+            $('#create-transportation-form').addClass('loading');
+
+            var data = $('form').serializeObject();
+            data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+            $.ajax({
+                url: "{% url 'api-transportation-create' %}",
+                method: 'POST',
+                data: data,    
+            }).done(function(response) {
+                $('#create-transportation-form').removeClass('loading');
+                window.location.reload();
+            });
+        });
+    });
+</script>
+
+<script type="text/javascript">
+  
+  $('.confirm-manifest').click(function() {
+    $('#transportation-form').submit();
+  });
+
+  $('#add-transportation-form').submit(function() {
+ 
+    var dataAdding = $('#add-transportation-form').serializeObject();
+    console.log('send ajax new transport', dataAdding);
+
+    // $.ajax({
+
+    // }).done(function(response) {
+      // if (response.success === -1) {
+        // console.log('error inputs', response);
+        // return false;
+      // }
+
+    // });
+  
+  });
+
+  $('.add-transport').click(function() {
+    $('#add-transportation-form').submit();
+  });
+
+
+</script>
+
+{% endblock %}
