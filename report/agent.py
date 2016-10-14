@@ -295,33 +295,29 @@ class AgentReport:
 
         return response
 
-    def print_shipment_marking(self, request):
-        AWB_NUMBER = 12345
-        DESTINATION = 'BANYUWANGI'
-        SERVICE = 'EXPRESS'
-        PAYMENT_TYPE = 'PREPAID CASH'
-        PICKUP_AT = '2016/09/22 14:30'
-        GOOD_NAME = "Buku-Buku Pelajaran"
-        PCS = '2'
-        TOTAL = '4'
-        WEIGHT = "750 Kg"
-        VOL_WEIGHT = "1230 Kg"
+    def print_shipment_marking(self, item_id):
+        item = Item.objects.get(pk = item_id)
+        AWB_NUMBER = item.awb.number
+        DESTINATION = item.receiver_city.name
+        SERVICE = item.tariff.service.name
+        PAYMENT_TYPE = item.payment_type.name
+        PICKUP_AT = item.created_at.strftime('%d-%m-%Y  %H:%M:%S')
+        GOOD_NAME = item.good_name
+        PCS = str(int(item.quantity))
+        TOTAL = str(int(item.quantity))
+        WEIGHT = str(int(item.weight)) + " kg"
+        VOL = item.length * item.width * item.height
+        VOL_WEIGHT = str(int(item.weight * VOL)) + " kg"
 
         sender = list()
-        sender.append(Paragraph('PT Matra Integra Intika', self.sender_style))
-        sender.append(Paragraph('Wisma Metropol, Lt 26', self.sender_style))
-        sender.append(Paragraph('Jl. Masjid Kav 31-32', self.sender_style))
-        sender.append(Paragraph('Jakarta, 12320', self.sender_style))
-        sender.append(Paragraph('Telp: 2334000', self.sender_style))
-        sender.append(Paragraph('Name: Andi Surya', self.sender_style))
+        sender.append(Paragraph(item.sender_name, self.sender_style))
+        sender.append(Paragraph(item.sender_address, self.sender_style))
 
         receiver = list()
-        receiver.append(Paragraph('PT Bank Rakyat Indonesia', self.receiver_style))
-        receiver.append(Paragraph('Divisi Kredit Komersial', self.receiver_style))
-        receiver.append(Paragraph('Jl. Jendral Sudirman 71', self.receiver_style))
-        receiver.append(Paragraph('Banyuwangi, 56320', self.receiver_style))
-        receiver.append(Paragraph('Telp: 2523000', self.receiver_style))
-        receiver.append(Paragraph('Bp. Wahyu Tunggono', self.receiver_style))
+        RECEIVER_NAME = Paragraph(item.receiver_name, self.receiver_style)
+        RECEIVER_ADDRESS = Paragraph(item.receiver_address, self.receiver_style)
+        receiver.append(RECEIVER_NAME)
+        receiver.append(RECEIVER_ADDRESS)
 
         shipper_reference = list()
         content = "D/N 00021, D/N 00022, D/N 00023, D/N 00024, D/N 00025, D/N 00026, D/N 00027"
@@ -452,6 +448,7 @@ class AgentReport:
         f.addFromList(sender, c)
 
         f = Frame(235, 480, 245, 125, showBoundary=0)
+        #sheight = f._aH - (RECEIVER_NAME.wrap(f._aW, f._aH)[1] + RECEIVER_ADDRESS.wrap(f._aW, f._aH)[1])
         f.addFromList(receiver, c)
 
         f = Frame(30, 490, 190, 50, showBoundary=0)
@@ -468,7 +465,43 @@ class AgentReport:
 
         return response
 
-    def print_shipment_receipt_multiple_address(self, request):
+    def print_shipment_receipt_multiple_address(self, item_id):
+        item_id_list = item_id.split(',')
+        print item_id_list
+        item = Item.objects.get(pk = item_id_list[0])
+        operator = item.user.fullname
+        date = item.created_at.strftime('%d-%m-%Y')
+        time = item.created_at.strftime('%H:%M')
+        location = item.user.site.name
+        operator_city = item.user.site.city.name
+        
+        sender_name = item.sender_name
+        sender_address = item.sender_address
+
+        # list multiple item information
+        receiver_awb_list = []
+        service_list = []
+        receiver_address_list = []
+        quantity_list = []
+        weight_list = []
+        volume_list = []
+        instruction_list = []
+        receiver_name_list = []
+        price_list = []
+
+        for i in range(len(item_id_list)):
+            item = Item.objects.get(pk = item_id_list[i])
+
+            receiver_awb_list.append(item.awb.number)
+            service_list.append(item.tariff.service.name)
+            receiver_address_list.append(item.receiver_city.name)
+            quantity_list.append(item.quantity)
+            weight_list.append(item.weight)
+            volume_list.append(item.weight * (item.height * item.length * item.width))
+            instruction_list.append(item.instruction)
+            receiver_name_list.append(item.receiver_name)
+            price_list.append(item.price)
+
         # setting for sending back the PDF in response
         filename = 'shipment-receipt.pdf'
         response = HttpResponse(content_type='application/pdf')
@@ -553,11 +586,11 @@ class AgentReport:
         # TEXT
         # sender and receiver
         data = [
-            ['Operator'    , ' :', 'No. Pelanggan', ' :'],
-            ['Hari/Tanggal', ' :', 'Pengirim'     , ' :'],
-            ['Jam'         , ' :', 'Alamat'       , ' :'],
-            ['Lokasi'      , ' :', ''             , ''  ],
-            ['Kota'        , ' :', ''             , ''  ],
+            ['Operator'    , ' : ' + operator, 'No. Pelanggan', ' :'],
+            ['Hari/Tanggal', ' : ' + date, 'Pengirim'     , ' : ' + sender_name],
+            ['Jam'         , ' : ' + time, 'Alamat'       , ' : ' + sender_address],
+            ['Lokasi'      , ' : ' + location, ''             , ''  ],
+            ['Kota'        , ' : ' + operator_city, ''             , ''  ],
         ]
 
         table = Table(data, colWidths=(18*mm, 82*mm, 20*mm, 20*mm))
@@ -578,7 +611,7 @@ class AgentReport:
         c.drawString(24, header_y, 'No')
         c.drawString(55, header_y, 'AWB Number')
         c.drawString(138, header_y, 'Layanan')
-        c.drawString(190, header_y, 'Tujuan')
+        c.drawString(193, header_y, 'Tujuan')
         c.drawString(240, header_y, 'Pcs')
         c.drawString(265, header_y, 'Berat')
         c.drawString(300, header_y, 'Brt Vol')
@@ -587,6 +620,22 @@ class AgentReport:
         c.drawString(460, header_y, 'Ref.')
         c.drawString(530, header_y, 'Rp.')
 
+        header_y = 620
+        for i in range(len(item_id_list)):
+            header_y = header_y - 10 
+            c.setFont('Helvetica', 8)
+            c.drawCentredString(30, header_y, str(i + 1))
+            c.drawCentredString(85, header_y, receiver_awb_list[i])
+            c.drawCentredString(156, header_y, service_list[i])
+            c.drawCentredString(206, header_y, receiver_address_list[i])
+            c.drawCentredString(248, header_y, str(quantity_list[i]))
+            c.drawCentredString(275, header_y, str(weight_list[i]))
+            c.drawCentredString(315, header_y, str(volume_list[i]))
+            c.drawCentredString(345, header_y, instruction_list[i])
+            c.drawCentredString(400, header_y, receiver_name_list[i])
+            c.drawCentredString(465, header_y, '')
+            c.drawCentredString(535, header_y, 'Rp.' + str(price_list[i]))
+        
         statement= list()
         content = "Dengan ini pengirim menyatakan telah memberi keterangan " \
             "sebenarnya dan menyetujui syarat-syarat pengiriman seperti " \

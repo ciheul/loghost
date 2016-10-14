@@ -6,6 +6,11 @@
   <form class="ui form" id="create-item-form">
     <h1 class="ui header">Consignment Note</h1>
 
+    <div class="field">
+        <div class="ui primary right floated button multiple-input-btn"  onclick="location.href='{% url 'ag-fill-multiple' %}'"><i class="send outline icon"></i> Multiple Shipment</div>
+        <br>
+    </div>
+    
     <h3 class="ui dividing header">Sender</h3>
     <div class="fields">
       <div class="six wide required field">
@@ -212,7 +217,7 @@
     data.csrfmiddlewaretoken = Cookies.get('csrftoken');
 
     $.ajax({
-      url: "{% url 'api-item-create' %}",
+      url: "{% url 'api-agent-item-create' %}",
       method: 'POST',
       data: data,
     }).done(function(response) {
@@ -233,6 +238,8 @@
         window.scrollTo(0, document.body.scrollHeight);
 
         return;
+      } else {
+        window.open("/agent/fill/consigment/print/" + response.id + "/", "_blank");
       }
 
       {# $('#create-item-form').removeClass('loading'); #}

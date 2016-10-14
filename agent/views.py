@@ -4,9 +4,8 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 
 from core.models import City, GoodType, PaymentType, Service
-from report  import coree
+from report  import coree, agent
 from report import agentnew
-from report.agent import AgentReport
 
 
 class AgentView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -31,6 +30,17 @@ class FillView(AgentView):
         }
         return render(request, 'agent/fill.html', context)
 
+class FillMultipleView(AgentView):
+    def get(self, request):
+        context = {
+            'fill_active': 'active',
+            'cities': City.objects.all().order_by('name'),
+            'good_types': GoodType.objects.all(),
+            'payment_types': PaymentType.objects.all(),
+            'services': Service.objects.all(),
+        }
+        return render(request, 'agent/fill-multiple.html', context)
+
 
 class TrackView(AgentView):
     def get(self, request):
@@ -46,16 +56,30 @@ class TariffView(AgentView):
         }
         return render(request, 'agent/tariff.html', context)
 
-
 class ReportView(AgentView):
-    def get(self, request):
-        context = { 'report_active': 'active', 'site': request.user.site }
-        return render(request, 'agent/inventory.html', context)
 
-    def post(self, request):
-        report = AgentReport()
-        response = report.print_awb(request)
+    def get(self, request, item_id):
+        report = agentnew.AgentReport()
+        response = report.run(item_id)
         return response
+
+    def post(self, request, item_id):
+        report = agentnew.AgentReport()
+        response = report.run(item_id)
+        return response
+
+class ReportMultipleView(AgentView):
+
+    def get(self, request, item_id):
+        report = agent.AgentReport()
+        response = report.print_shipment_receipt_multiple_address(item_id)
+        return response
+
+    def post(self, request, item_id):
+        report = agent.AgentReport()
+        response = report.print_shipment_receipt_multiple_address(item_id)
+        return response
+
 
 class BlankReportView(AgentView):
     def post(self, request):
@@ -65,7 +89,7 @@ class BlankReportView(AgentView):
 
 class NewReportView(AgentView):
     def post(self, request):
-        report = agentnew.Report()
+        report = agentnew.AgentReport()
         response = report.run(request)
         return response
 
@@ -87,8 +111,19 @@ class ShipmentView(AgentView):
     #     return render(request, 'agent/inventory.html', context)
 
     def post(self, request):
-        report = AgentReport()
+        report = agent.AgentReport()
         response = report.print_shipment_marking(request)
+        return response
+
+
+class ShipmentMarkingView(AgentView):
+    # def get(self, request):
+    #     context = { 'shipment_active': 'active' }
+    #     return render(request, 'agent/inventory.html', context)
+
+    def post(self, request, item_id):
+        report = agent.AgentReport()
+        response = report.print_shipment_marking(item_id)
         return response
 
 
@@ -98,7 +133,7 @@ class ShipmentReceiptView(AgentView):
     #     return render(request, 'agent/inventory.html', context)
 
     def post(self, request):
-        report = AgentReport()
+        report = agent.AgentReport()
         response = report.print_shipment_receipt_multiple_address(request)
         return response
 
@@ -107,3 +142,8 @@ class ProfileView(AgentView):
     def get(self, request):
         context = { 'profile_active': 'active' }
         return render(request, 'agent/profile.html', context)
+
+class InventoryListView(AgentView):
+    def get(self, request):
+        context = { 'report_active': 'active', 'site': request.user.site }
+        return render(request, 'agent/inventory.html', context)

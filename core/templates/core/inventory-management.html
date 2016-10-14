@@ -74,6 +74,12 @@
             + "  <input type='hidden' name='csrfmiddlewaretoken' value='" + Cookies.get('csrftoken')+ "'>" 
             + "  <input type='hidden' name='pk' value='" + row.action + "'>" 
             + "  <button class='mini ui primary button print-btn'>Print</button>"
+            + "</form>"
+            + "<form target='_blank' method='post' action='/core/shipment/marking/" + row.action + "/'>"
+            {# + '"' + {% csrf_token %} + '"' #}
+            + "  <input type='hidden' name='csrfmiddlewaretoken' value='" + Cookies.get('csrftoken')+ "'>" 
+            + "  <input type='hidden' name='pk' value='" + row.action + "'>" 
+            + "  <button class='mini ui primary button shipmark-btn'>Shipment Marking</button>"
             + "</form>";
         }
       }

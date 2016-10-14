@@ -1,0 +1,228 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header" style="margin-bottom:1em">Bag Management</h1>
+
+  <div class="ui small primary button" id="create-bag-modal-btn">Create Bag</div>
+
+  <table id="report" class="ui celled table">
+    <thead>
+      <tr>
+        <th>Bag Number</th>
+        <th>Item Inside Bag</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+  </table>
+</div>
+
+<div id="modal-container"></div>
+
+<script type="text/template" id="create-bag-modal-template">
+  <div class="ui small modal" id="create-bag-modal">
+    <i class="close icon"></i>
+    <div class="header">Create Bag</div>
+    <div class="content">
+      <form class="ui form" id="create-bag-form">
+        <div class="field">
+          <label>Bag Number</label>
+          <input type="text" name="number" placeholder="BAG1234">
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+        <div class="ui black deny button">Cancel</div>
+        <div class="ui green button" id="create-bag-button">Add</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="update-bag-modal-template">
+  <div class="ui small modal" id="update-bag-modal">
+    <i class="close icon"></i>
+    <div class="header">Update Bag</div>
+    <div class="content">
+      <form class="ui form" id="update-bag-form">
+        <input type="hidden" name="pk" value="<%= pk %>">
+        <div class="field">
+          <label>Bag Number</label>
+          <input type="text" name="number" value="<%= number %>">
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+        <div class="ui black deny button">Cancel</div>
+        <div class="ui green button" id="update-bag-button">Update</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="delete-bag-modal-template">
+  <div class="ui small modal" id="delete-bag-modal">
+    <i class="close icon"></i>
+    <div class="header">Delete Bag</div>
+    <div class="content delete-content"></div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui red button" id="delete-bag-button" data-pk=<%= pk %>>Delete Bag</div>
+    </div>
+  </div>
+</script>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  $.fn.serializeObject = function()
+  {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if (o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+  };
+
+  // render table
+  $('#report').DataTable({
+    searching: false,
+    bLengthChange: false,
+    bInfo: false,
+    {# serverSide: true, #}
+    ajax: {
+      url: "{% url 'api-bagging-list' %}",
+      type: 'GET'
+    },
+    columns: [
+      { data: 'number', className: 'dt-left' },
+      { data: 'jumlah', className: 'dt-left' },
+      { data: 'action', className: 'dt-left' },  
+    ],
+    columnDefs: [
+      {
+        targets: -1,
+        render: function(data, type, row, meta) {
+          return ''
+            + '<div class="mini ui primary button" onclick="window.location.href=\'' + row.user_url + '\'">View Item</div>'
+            + '<div class="mini ui primary button" data-action="update" data-pk=' + row.action + ' data-number="' + row.number + '">Update</div>'
+            + '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-number="' + row.number + '">Delete</div>';
+        }
+      }
+    ]
+  });
+
+  // add event to update button and delete button
+  $('#report tbody').click('button', function(e) {
+    var button = $(e.target);
+
+    // UPDATE AGENT
+    if (button.data('action') === 'update') {
+      // set up modal template and pass agent pk
+      var templateFunc = _.template($('#update-bag-modal-template').html());
+      var modalTemplate = templateFunc({
+        pk: button.data('pk'),
+        number: button.data('number'),
+      });
+
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#update-bag-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      $('#update-bag-button').click(function(e) {
+        var data = $('form').serializeObject();
+        data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+        $.ajax({
+          url: "{% url 'api-bag-update' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+
+      // set dropdown to rendered template
+      $('.dropdown').dropdown();
+    }
+
+    // DELETE AGENT
+    if (button.data('action') === 'delete') {
+      // set up modal template and pass agent pk
+      var templateFunc = _.template($('#delete-bag-modal-template').html());
+      var modalTemplate = templateFunc({ pk: button.data('pk') });
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#delete-bag-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      // write content to modal
+      var content = "Apakah Anda yakin ingin menghapus BAG dengan ID <b>" + button.data('number') + "</b>?";
+      $('.delete-content').append(content);
+
+      $('#delete-bag-button').click(function(e) {
+        var data = {
+          csrfmiddlewaretoken: Cookies.get('csrftoken'),
+          pk: $(e.target).data('pk')
+        }
+
+        $.ajax({
+          url: "{% url 'api-bag-delete' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+    }
+  });
+
+  // show create agent modal
+  $('#create-bag-modal-btn').click(function() {
+    var templateFunc = _.template($('#create-bag-modal-template').html());
+    var modalTemplate = templateFunc();
+
+    $('#modal-container').append(modalTemplate);
+
+    $('#create-bag-modal')
+      .modal({
+        onHidden: function() { $('.ui.dimmer').empty(); }
+      }).modal('show');
+
+    // set dropdown to rendered template
+    $('.dropdown').dropdown();
+
+    // CREATE AGENT
+    $('#create-bag-button').click(function(e) {
+      e.preventDefault();
+
+      $('#create-bag-form').addClass('loading');
+
+      var data = $('form').serializeObject();
+      data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+      $.ajax({
+        url: "{% url 'api-bag-create' %}",
+        method: 'POST',
+        data: data,
+      }).done(function(response) {
+        $('#create-bag-form').removeClass('loading');
+        window.location.reload();
+      });
+    });
+  });
+</script>
+{% endblock %}

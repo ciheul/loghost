@@ -47,6 +47,9 @@
             <div class="{{ bagging_active }} item">
               <a class="" href="{% url 'core-bagging' %}">Bagging</a>
             </div>
+            <div class="{{ bagginglist_active }} item">
+              <a class="" href="{% url 'core-bagging-list' %}">Bagging List</a>
+            </div>
             <div class="divider"></div>
             <div class="header">
               Outbound - Uplifting
@@ -79,7 +82,8 @@
           </div>
           
         </div>
-        <a class="{{ transportation_active }} item" href="#" style="color:white">Transportation</a>
+        <a class="{{ transportation_active }} item" href="{% url 'core-transportation' %}" style="color:white">Transportation</a>
+        <a class="{{ courier_active }} item" href="{% url 'core-courier' %}" style="color:white">Courier</a> 
         <div class="right menu">
           <div class="ui dropdown item" style="color:white">
             {{ request.user.email }}<i class="dropdown icon"></i>

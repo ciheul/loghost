@@ -1,0 +1,354 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header ui form" style="margin-bottom:1em">
+    <div class="fields">
+      <div class="six wide field">
+        Courier Management
+      </div>
+  </h1>
+
+  <div class="ui small primary button" id="create-courier-modal-btn"> Create Courier</div>
+
+  <table id="report" class="ui celled table">
+      <thead>
+          <tr>
+              <th>Full Name</th>
+              <th>Phone</th>
+              <th>Assigned Transportation</th>
+              <th>Assigned City</th>
+              <th>Action</th>
+          </tr>
+      </thead>
+  </table>
+</div>
+
+<div id="modal-container"></div>
+
+<script type="text/template" id="create-courier-modal-template">
+  <div class="ui small modal" id="create-courier-modal">
+    <i class="close icon"></i>
+    <div class="header">Add Courier</div>
+    <div class="content">
+
+      <form class="ui form" id="create-courier-form">
+        <h3 class="ui dividing header">Transpostation Info</h3>
+        <div class="fields">
+
+          <div class="eight wide field required">
+            <label>Courier's Name</label>
+            <input type="text" name="fullname" placeholder="Courier's Name">
+          </div>
+        </div>
+        <div class="fields">
+          <div class="eight wide field required">
+            <label>Phone Number</label>
+            <input type="text" name="phone" placeholder="081234567890">
+          </div>
+        </div>
+        <div class="field">
+          <div class="eight wide field required">
+            <label>Assigned Transportation</label>
+            <select class="ui fluid dropdown" name="transportation_type">
+              <option value="">Transportation Type</option>
+              {% for type in transport_type %}
+                <option value="{{ type.pk }}">{{ type.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="fields">
+          <div class="eight wide field required">
+            <label>Assigned City</label>
+            <select class="ui fluid dropdown" name="city">
+              <option value="">Departed At</option>
+              {% for city in cities %}
+                <option value="{{ city.pk }}">{{ city.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </form>
+
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="create-courier-button">Add</div>
+    </div>
+  </div>
+</script>
+
+<script type="text/template" id="update-courier-modal-template">
+  <div class="ui small modal" id="update-courier-modal">
+    <i class="close icon"></i>
+    <div class="header">Update Courier</div>
+    <div class="content">
+
+      <form class="ui form" id="update-courier-form">
+        <input type="hidden" name="pk" value="<%= pk %>">  
+        <h3 class="ui dividing header">Courier Info</h3>
+        <div class="fields">
+
+          <div class="eight wide field required">
+            <label>Courier's Name</label>
+            <input type="text" name="fullname" value="<%= fullname %>">
+          </div>
+        </div>
+        <div class="fields">
+          <div class="eight wide field required">
+            <label>Phone Number</label>
+            <input type="text" name="phone" value="<%= phone %>">
+          </div>
+        </div>
+        <div class="field">
+          <div class="eight wide field required">
+            <label>Assigned Transportation</label>
+            <select class="ui fluid dropdown" name="transportation_type">
+              <option value="">Transportation Type</option>
+              {% for type in transport_type %}
+              <option value="{{ type.pk }}" <% if (type_pk === {{ type.pk }}) { %>selected<% } %>>{{ type.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="fields">
+          <div class="eight wide field required">
+            <label>Assigned City</label>
+            <select class="ui fluid dropdown" name="city">
+              <option value="">Departed At</option>
+              {% for city in cities %}
+              <option value="{{ city.pk }}" <% if (city_pk === {{ city.pk }}) { %>selected<% } %>>{{ city.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </form>
+
+    </div>
+    <div class="actions">
+      <div class="ui black deny button">Cancel</div>
+      <div class="ui green button" id="update-courier-button">Update</div>
+    </div>
+  </div>
+</script>
+
+
+<script type="text/template" id="delete-courier-modal-template">
+    <div class="ui small modal" id="delete-courier-modal">
+        <i class="close icon"></i>
+        <div class="header">Delete Transportation</div>
+        <div class="content delete-content"></div>
+        <div class="actions">
+            <div class="ui black deny button">Cancel</div>
+            <div class="ui red button" id="delete-courier-button" data-pk=<%= pk %>>Delete</div>
+        </div>
+    </div>
+</script>
+  
+</script>
+
+{% endblock %}
+
+{% block javascript %}
+
+<script type="text/javascript">
+  var bagCollection = [];
+  var awbCollection = [];
+
+</script>
+
+<script>
+    $.fn.serializeObject = function()
+    {
+        var o = {};
+        var a = this.serializeArray();
+        $.each(a, function() {
+            if(o[this.name] !== undefined) {
+                if(!o[this.name].push) {
+                    o[this.name] = [o[this.name]];
+                }
+                o[this.name].push(this.value || '');
+            } else {
+                o[this.name] = this.value || '';
+            }
+        });
+        return o;
+    };
+
+    // render table
+    $('#report').DataTable({
+        searching: false,
+        bLengthChange: false,
+        bInfo: false,
+
+        ajax: {
+            url: "{% url 'api-courier-read' %}",
+            type: 'GET'
+        },
+        columns: [
+            { data: 'fullname', className: 'dt-left' },
+            { data: 'phone', className: 'dt-left' },
+            { data: 'transportation_type', className: 'dt-left' },
+            { data: 'city', className: 'dt-left' },
+            { data: 'action', className: 'dt-left' },
+        ],
+        columnDefs: [
+            {
+                targets: -1,
+                render: function(data, type, row, meta) {
+                    return ''
+                    + '<div class="mini ui primary button" data-action="update" data-pk=' + row.action + ' data-type= ' + row.transportation_type_pk + ' data-name="' + row.fullname + '" data-phone="' + row.phone + '" data-city=' + row.city_pk + '> Update </div>'
+                    + '<div class="mini ui red button" data-action="delete" data-pk=' + row.action + ' data-name="' + row.fullname + '"> Delete </div>';
+                }
+            }
+        ]
+    });
+
+    // add event to update button and delete button
+    $('#report tbody').click('button', function(e) {
+        var button = $(e.target);
+
+    // UPDATE AGENT
+    if (button.data('action') === 'update') {
+      // set up modal template and pass tariff pk
+      var templateFunc = _.template($('#update-courier-modal-template').html());
+      var modalTemplate = templateFunc({
+        pk: button.data('pk'),
+        type_pk: button.data('type'),
+        city_pk: button.data('city'),
+        fullname: button.data('name'),
+        phone: button.data('phone'),
+      });
+
+      console.log('city:', button.data('city'));
+      //console.log('modalTemplate :', modalTemplate);
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#update-courier-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      $('#update-courier-button').click(function(e) {
+        var data = $('form').serializeObject();
+        data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+        $.ajax({
+          url: "{% url 'api-courier-update' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+
+      // set dropdown to rendered template
+      $('.dropdown').dropdown();
+    }
+
+    // DELETE AGENT
+    if (button.data('action') === 'delete') {
+      // set up modal template and pass tariff pk
+      var templateFunc = _.template($('#delete-courier-modal-template').html());
+      var modalTemplate = templateFunc({ pk: button.data('pk') });
+      $('#modal-container').append(modalTemplate);
+
+      // show modal and destroy when closing
+      $('#delete-courier-modal')
+        .modal({
+          onHidden: function() { $('.ui.dimmer').empty(); }
+        }).modal('show');
+
+      // write content to modal
+      var content = "Are you sure to delete courier with name <b>" + button.data('name') + "</b>?";
+
+      $('.delete-content').append(content);
+
+      $('#delete-courier-button').click(function(e) {
+        var data = {
+          csrfmiddlewaretoken: Cookies.get('csrftoken'),
+          pk: $(e.target).data('pk')
+        }
+
+        $.ajax({
+          url: "{% url 'api-courier-delete' %}",
+          method: 'POST',
+          data: data,
+        }).done(function(response) {
+          window.location.reload();
+        });
+      });
+    }
+});
+
+</script>
+
+<script type="text/javascript">
+  
+    $('#create-courier-modal-btn').click(function() {
+        var templateFunc = _.template($('#create-courier-modal-template').html());
+        var modalTemplate = templateFunc();
+    // $('#modal-container').html($('#add-transport-modal-template').html());
+        $('#modal-container').append(modalTemplate);
+
+        $('#create-courier-modal').modal({
+            onHidden: function() { $('ui.dimmer').empty(); }
+        }).modal('show');
+
+        $('.dropdown').dropdown();
+
+        // CREATE TRANSPORTATION
+        $('#create-courier-button').click(function(e) {
+            e.preventDefault();
+
+            $('#create-courier-form').addClass('loading');
+
+            var data = $('form').serializeObject();
+            data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+            $.ajax({
+                url: "{% url 'api-courier-create' %}",
+                method: 'POST',
+                data: data,    
+            }).done(function(response) {
+                $('#create-courier-form').removeClass('loading');
+                window.location.reload();
+            });
+        });
+    });
+</script>
+
+<script type="text/javascript">
+  
+  $('.confirm-manifest').click(function() {
+    $('#courier-form').submit();
+  });
+
+  $('#add-courier-form').submit(function() {
+ 
+    var dataAdding = $('#add-courier-form').serializeObject();
+    console.log('send ajax new courier', dataAdding);
+
+    // $.ajax({
+
+    // }).done(function(response) {
+      // if (response.success === -1) {
+        // console.log('error inputs', response);
+        // return false;
+      // }
+
+    // });
+  
+  });
+
+  $('.add-courier').click(function() {
+    $('#add-courier-form').submit();
+  });
+
+
+</script>
+
+{% endblock %}

@@ -7,8 +7,9 @@ from django.views.generic import View
 
 from core.models import City, AWB, Service, Site, ItemStatus, ItemSite, SiteType, GoodType, PaymentType
 from core.models import Shipment, Transportation, TransportationType, Courier, Forwarder
+from core.models import Bag, BagItem
 
-from report import agentnew, coree
+from report import agent, agentnew, coree
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
@@ -125,6 +126,18 @@ class ConsignmentNoteManagementView(StaffView):
         }
         return render(request, 'core/consignment-note.html', context)
 
+class ConsignmentNoteMultiManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'consignment_active': 'active',
+            'fill_active': 'active',
+            'cities': City.objects.all().order_by('name'),
+            'good_types': GoodType.objects.all(),
+            'payment_types': PaymentType.objects.all(),
+            'services': Service.objects.all(),
+        }
+        return render(request, 'core/consignment-multiple-note.html', context)
+
 class ManifestingManagementView(StaffView):
     def get(self, request):
         context = {
@@ -232,16 +245,89 @@ class PrintConsigmentView(StaffView):
 
     def post(self, request, item_id):
         print item_id
-        report = agentnew.Report()
+        report = agentnew.AgentReport()
         response = report.run(item_id)
         return response
 
 class PrintFilledShipmentDetailView(StaffView):
-    def get(self, request):
-        context = { 'printmanifest_active': 'active', 'site': request.user.site }
-        return render(request, 'core/consignment-note.html', context)
 
-    def post(self, request, item_id):
-        report = agentnew.Report()
+    def get(self, request, item_id):
+        print("item_id: " + item_id)
+        report = agentnew.AgentReport()
         response = report.run(item_id)
         return response
+
+    def post(self, request, item_id):
+        report = agentnew.AgentReport()
+        response = report.run(item_id)
+        return response
+
+class PrintMultipleFilledShipmentDetailView(StaffView):
+
+    def get(self, request, item_id):
+        print("item_id: " + item_id)
+        report = agent.AgentReport()
+        response = report.print_shipment_receipt_multiple_address(item_id)
+        return response
+
+
+class ShipmentMarkingView(StaffView):
+# def get(self, request):
+#     context = { 'shipment_active': 'active' }
+#     return render(request, 'agent/inventory.html', context)
+
+    def post(self, request, item_id):
+        report = agent.AgentReport()
+        response = report.print_shipment_marking(item_id)
+        return response
+
+class BaggingListManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'bagitem_active': 'active',
+            'bagitem': BagItem.objects.all(),
+            # 'site_types': SiteType.objects.filter(
+            #     Q(name='Agen') | Q(name='Sub Agen')),
+        }
+        return render(request, 'core/bagging-list.html', context)
+
+
+
+class BaggingItemManagementView(StaffView):
+    def get(self, request, bag_id):
+        try:
+            bag = Bag.objects.get(pk=bag_id)
+        except Bag.DoesNotExist:
+            response = {
+                'success': -1,
+                'message': "Wrong identifier",
+            }
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json') 
+
+        context = {
+            'bag_id': bag_id,
+            'bag_number': '%s' % (bag.number)
+        }
+        return render(request, 'core/bagging-item-management.html', context)
+
+class TransportationManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'transportation_active': 'active',
+            'transport_type': TransportationType.objects.all(), 
+            'cities': City.objects.all(),
+        }
+        return render(request, 'core/transportation-management.html', context)
+
+class CourierManagementView(StaffView):
+    def get(self, request):
+        context = {
+            'courier_active': 'active',
+            'couriers': Courier.objects.all(), 
+            'cities': City.objects.all(),
+            'transport_type': TransportationType.objects.all(),
+        }
+        return render(request, 'core/courier-management.html', context)
+
+
