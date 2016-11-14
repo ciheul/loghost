@@ -25,10 +25,10 @@
 
       <div class="five wide field">
 
-        <select id="status" class="ui fluid dropdown" name="status">
+        <select id="status" class="ui fluid dropdown" id="status"  name="status">
           <option value="">Choose Status</option>
           {% for stats in status %}
-            <option value="{{ stats.id }}">{{ stats.code }} - {{ stats.name }}</option>
+            <option value="{{ stats.code }}">{{ stats.code }} - {{ stats.name }}</option>
           {% endfor %}
         </select>
       </div>
@@ -41,7 +41,7 @@
 
     <div class="fields" id="delivered-panel" style="disply:none;">
       <div class="five wide field">
-        <input id="reciever_name" type="text" name="reciever_name" placeholder="reciever name">
+        <input id="receiver_name" type="text" name="receiver_name" placeholder="receiver name">
       </div>
 
       <div class="five wide field">
@@ -76,6 +76,7 @@
 </div>
 
 <div id="modal-container"></div>
+<div id="message-container"></div>
 
 <script type="text/template" id="error-msg-template">
   <span class="error-msg" style="color:#E0B4B4; font-size:12px; font-style:italic;">Field required</span>
@@ -153,7 +154,7 @@
     cour_select = cour_text.split(' ', 1)[0];
     $('#delivered-panel').hide();
     if(jQuery.inArray(cour_select, delivered) !== -1) {
-      console.log('trueh', cour_select, delivered, cour_text);
+      console.log('true', cour_select, delivered, cour_text);
       $('#delivered-panel').show();
       return;
     }
@@ -173,13 +174,13 @@
       errCounter++;
     }
 
-    if ($('#date').val() === '') {
+    if ($('#status').val() === 'OK' && $('#date').val() === '') {
       error_msg['date'] = true;
       errCounter++;
     }
 
-    if ($('#reciever_name').val() === '') {
-      error_msg['reciever_name'] = true;
+    if ($('#status').val() === 'OK' && $('#receiver_name').val() === '') {
+      error_msg['receiver_name'] = true;
       errCounter++;
     }
 
@@ -220,7 +221,7 @@
       dataPushed = {
         awb: $('.bag-text').val(),
         status: cour_select,
-        reciever_name: $('#reciever_name').val(),
+        receiver_name: $('#receiver_name').val(),
         date: $('#date').val()
       };
     }
@@ -231,7 +232,7 @@
 
     $('.bag-text').val('');
     $('#date').val('');
-    $('#reciever_name').val('');
+    $('#receiver_name').val('');
     $('.bag-text').focus(); 
 
     console.log('submit-bag-form', data);
@@ -260,7 +261,8 @@
       dataType: 'json',
       data: {
         data: JSON.stringify(collections),
-        user_id: {{user_id}}
+        user_id: {{user_id}},
+        status_code: $('#status option:selected').val()
       },
 
     }).done(function(response) {
@@ -268,10 +270,34 @@
       collections = [];
       $('.ui.fluid.dropdown.selection').dropdown('clear') 
     // or $('#courier').dropdown('get value');
-     });
+
+      $('#message-container').empty();
+
+      if (response.success === -1) {
+        var messageTemplateFunc = _.template($('#message-error-template').html());
+        var messageTemplate = messageTemplateFunc({ message : response.message });
+        $('#message-container').append(messageTemplate);
+
+        $('.message .close').on('click', function() {
+            $(this).closest('.message').transition('fade');
+        });
+
+        window.scrollTo(0, document.body.scrollHeight);
+
+        return;
+     }  
+
+    });
 
     return false;
   });
+</script>
+
+<script type="text/template" id="message-error-template">
+    <div class="ui negative message" style="margin-top:6mm">
+        <i class="close icon"></i>
+        <div class="header"><%= message %></div>
+    </div>
 </script>
 
 <!-- Form Script Notifiers -->
@@ -295,8 +321,8 @@
       console.log(';set');
     }
 
-    if (error.reciever_name) {
-      $('#reciever_name').parent().addClass('error');
+    if (error.receiver_name) {
+      $('#receiver_name').parent().addClass('error');
       console.log(';set');
     }
 
@@ -305,7 +331,7 @@
   function resetErrorView() {
     $('.bag-text').parent().removeClass('error');
     $('#date').parent().removeClass('error');
-    $('#reciever_name').parent().removeClass('error');
+    $('#receiver_name').parent().removeClass('error');
     $('#status').parent().removeClass('error');
     $('.error-msg').remove();
   }

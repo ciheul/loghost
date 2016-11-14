@@ -8,7 +8,7 @@ from django.views.generic import View
 from core.models import City, AWB, Service, Site, ItemStatus, ItemSite, SiteType, GoodType, PaymentType
 from core.models import Shipment, Transportation, TransportationType, Courier, Forwarder
 from core.models import Bag, BagItem
-
+from core.models import ShippingDocument
 from report import agent, agentnew, coree
 
 class StaffView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -329,5 +329,60 @@ class CourierManagementView(StaffView):
             'transport_type': TransportationType.objects.all(),
         }
         return render(request, 'core/courier-management.html', context)
+
+class DocumentManagementView(StaffView):
+    def get(self, request):
+        code_list = ['DC', 'DS', 'DR', 'DD']
+        
+        context = {
+            'document_active': 'active',
+            'documents': ShippingDocument.objects.all(),
+            'statuses': ItemStatus.objects.filter(code__in= code_list).order_by('code'),
+        }
+        return render(request, 'core/document-management.html', context)
+
+class DocumentSentManagementView(StaffView):
+    def get(self, request):
+        sent_status = ItemStatus.objects.get(code="DS")
+        code_list = ['DC', 'DS', 'DR', 'DD']
+        context = {
+            'document_sent': 'active',
+            'documents': ShippingDocument.objects.filter(status_id=sent_status.id),
+            'statuses': ItemStatus.objects.filter(code__in= code_list).order_by('code')
+        }
+        return render(request, 'core/document-sent.html', context)
+
+class DocumentCheckedManagementView(StaffView):
+    def get(self, request):
+        sent_status = ItemStatus.objects.get(code="DC")
+        code_list = ['DC', 'DS', 'DR', 'DD']
+        context = {
+            'document_checked': 'active',
+            'documents': ShippingDocument.objects.filter(status_id=sent_status.id),
+            'statuses': ItemStatus.objects.filter(code__in= code_list).order_by('code')
+        }
+        return render(request, 'core/document-checked.html', context)
+
+class DocumentReceivedManagementView(StaffView):
+    def get(self, request):
+        sent_status = ItemStatus.objects.get(code="DR")
+        code_list = ['DC', 'DS', 'DR', 'DD']
+        context = {
+            'document_received': 'active',
+            'documents': ShippingDocument.objects.filter(status_id=sent_status.id),
+            'statuses': ItemStatus.objects.filter(code__in= code_list).order_by('code')
+        }
+        return render(request, 'core/document-received.html', context)
+
+class DocumentDeliveredManagementView(StaffView):
+    def get(self, request):
+        sent_status = ItemStatus.objects.get(code="DD")
+        code_list = ['DC', 'DS', 'DR', 'DD']
+        context = {
+            'document_delivered': 'active',
+            'documents': ShippingDocument.objects.filter(status_id=sent_status.id),
+            'statuses': ItemStatus.objects.filter(code__in= code_list).order_by('code')
+        }
+        return render(request, 'core/document-delivered.html', context)
 
 

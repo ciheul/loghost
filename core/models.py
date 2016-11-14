@@ -83,11 +83,19 @@ class AWB(models.Model):
     def __unicode__(self):
         return self.number
 
+class ShippingDocument(models.Model):
+    number = models.CharField(max_length=30,unique=True)
+    status = models.ForeignKey('ItemStatus', null=True, blank=True)
+    objects = BulkUpdateManager()
+
+    def __unicode__(self):
+        return self.number
 
 class Item(models.Model):
     user = models.ForeignKey('account.CustomUser', null=True, blank=True)
     # NOTE using foreign key, the awb can be reused
     awb = models.ForeignKey('AWB', null=True, blank=True)
+    shipping_document = models.ForeignKey('ShippingDocument', null=True, blank=True)
     sender_name = models.CharField(max_length=50)
     sender_address = models.CharField(max_length=100)
     sender_city = models.ForeignKey(City, related_name='sender_city')
@@ -204,7 +212,7 @@ class Transportation(models.Model):
     base = models.CharField(max_length=20, null=True, blank=True)
     operator = models.CharField(max_length=50, null=True, blank=True)
     operator_phone = models.CharField(max_length=15, null=True, blank=True)
-    capacity = models.CharField(max_length=2, null=True, blank=True)
+    capacity = models.FloatField(null=True, blank=True)
 
     def __unicode__(self):
         return self.identifier
@@ -237,9 +245,14 @@ class ItemBagShipment(models.Model):
 
 class Bag(models.Model):
     number = models.CharField(max_length=30)
+    capacity = models.FloatField(null=True, blank=True)
+    current_volume = models.FloatField(null=True, blank=True)
 
     def __unicode__(self):
         return self.number
+
+    def getnumber(self):
+        return "Bag found"
 
 
 class BagItem(models.Model):
