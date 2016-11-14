@@ -82,6 +82,29 @@
           </div>
           
         </div>
+        <div class="ui dropdown item" style="color:white;">
+          <span class=''>Document</span><i class="dropdown icon"></i>
+          <div class="menu transition hidden" tabindex="-1">
+            <div class="header">
+              Document
+            </div>
+            <div class="{{ document_list }} item">
+              <a class="" href="{% url 'core-document-list' %}">All Document</a>
+            </div>
+            <div class="{{ document_checked }} item">
+              <a class="" href="{% url 'core-document-checked' %}">Document Checked</a>
+            </div>
+            <div class="{{ document_sent }} item">
+              <a class="" href="{% url 'core-document-sent' %}">Document Sent</a>
+            </div>
+            <div class="{{ document_received }} item">
+              <a class="" href="{% url 'core-document-received' %}">Document Received</a>
+            </div>
+            <div class="{{ document_delivered }} item">
+              <a class="" href="{% url 'core-document-delivered' %}">Document Delivered</a>
+            </div>
+          </div>
+        </div>
         <a class="{{ transportation_active }} item" href="{% url 'core-transportation' %}" style="color:white">Transportation</a>
         <a class="{{ courier_active }} item" href="{% url 'core-courier' %}" style="color:white">Courier</a> 
         <div class="right menu">

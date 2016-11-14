@@ -13,7 +13,8 @@ import simplejson as json
 from account.models import CustomUser
 from core.models import History, Item, ItemSite, ItemStatus, Site, Tariff, \
                         Shipment, ItemShipment, AWB, Bag, BagItem, \
-                        ItemBagShipment, Incident, Transportation, Delivery, Courier
+                        ItemBagShipment, Incident, Transportation, \
+                        Delivery, Courier, ShippingDocument
 from core.logics import generate_awb
 
 import traceback, random, string
@@ -512,16 +513,31 @@ class ItemCreateApi(View):
                                 content_type='application/json') 
 
         sd_item_status = ItemStatus.objects.get(code__exact='SD')
+        pickup_status = ItemStatus.objects.get(code__exact='PU')
+
+        awb = None
+        awbbefore = ''
+        try : 
+            awb = AWB.objects.get(number = request.POST['awb'])
+        except :
+            awb = None
 
         # TODO create AWB Generator
-        awb = self.get_awb_number(sd_item_status.id)
-        if awb is None:
-            response = {
-                'success': -1,
-                'message': 'Awb generation failed'
-            }
-            return HttpResponse(json.dumps(response),
+        if (awb is None or awb == ''):
+            awb = self.get_awb_number(sd_item_status.id)
+            if awb is None:
+                response = {
+                    'success': -1,
+                    'message': 'Awb generation failed'
+                }
+                return HttpResponse(json.dumps(response),
                                 content_type='application/json')
+        else:
+            awbbefore = awb.status.code
+            AWB.objects.filter(pk=awb.id, status_id = pickup_status.id).update(status_id = sd_item_status.id)
+            # awbbefore = awb.status.code
+
+        unprocessed = AWB.objects.filter(Q(pk=awb.id),~Q(status_id=sd_item_status.id))
 
         # normalize
         weight = request.POST['weight']
@@ -531,6 +547,7 @@ class ItemCreateApi(View):
         good_value = request.POST['good_value']
         sender_zip_code = request.POST['sender_zip_code']
         receiver_zip_code = request.POST['receiver_zip_code']
+        shipping_document = request.POST['shipping_document']
 
         if weight == '': weight = 0.0
         if length == '': length = 0.0
@@ -539,9 +556,20 @@ class ItemCreateApi(View):
         if good_value == '': good_value = 0
         if sender_zip_code == '': sender_zip_code = None
         if receiver_zip_code == '': receiver_zip_code = None
+        
+        if shipping_document == '':
+            document = None
+        else :
+            try:
+                document = ShippingDocument.objects.get(number = shipping_document)
+            except :
+                document = ShippingDocument(number=shipping_document)
+                document.save()
 
         # TODO error handling when site already exists
         # write to database
+        user = (CustomUser.objects.get(pk=1))
+        print('user : ' + user.fullname)
         try:
             item = Item(user=request.user,
                         awb=awb,
@@ -567,7 +595,8 @@ class ItemCreateApi(View):
                         price=int(request.POST['price']),
                         information=request.POST['note'],
                         instruction=request.POST['instruction'],
-                        tariff=tariff)
+                        tariff=tariff,
+                        shipping_document=document)
             item.save()
         except DatabaseError as e:
             response = {
@@ -610,8 +639,23 @@ class ItemCreateApi(View):
             }
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
+        
+        if unprocessed:
+            response = {
+                'success' : -1,
+                'unprocessed' : awb.number,
+                'message' : "Item with AWB number " + awb.number + "is not processed due to unqualified item status"
+            }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
 
-        response = { 'success': 0, 'awb': awb.number, 'id': item.id}
+        response = { 
+                'success': 0, 
+                'awbbefore' : awbbefore, 
+                'awbstatus' : AWB.objects.get(number = awb.number).status.code, 
+                'awb': awb.number, 
+                'id': item.id
+        }
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
 
@@ -855,20 +899,39 @@ class ItemCreateMultiApi(View):
 
         print(tariff_list[0])
         sd_item_status = ItemStatus.objects.get(code__exact='SD')
+        pickup_status = ItemStatus.objects.get(code__exact='PU')
 
         # TODO create AWB Generator
-        awb_list = []
-        
+        awb_qs_list = []
+        awbs = request.POST.getlist('awb')
         for i in range(len(destination_city_list)):
-            awb = self.get_awb_number(sd_item_status.id)
-            if awb is None:
-                response = {
-                    'success': -1,
-                    'message': 'Awb generation failed'
-                }   
-                return HttpResponse(json.dumps(response),
+            try:
+                awb_qs = AWB.objects.get(number = awbs[i])
+            except:
+                awb_qs = None
+            awb_qs_list.append(awb_qs)
+        
+        awb_list = []
+        awb_before_list = []
+        awb_id_list = []
+        for i in range(len(destination_city_list)):
+            if awb_qs_list[i] is None:
+                awb = self.get_awb_number(sd_item_status.id)
+                if awb is None:
+                    response = {
+                        'success': -1,
+                        'message': 'Awb generation failed'
+                    }   
+                    return HttpResponse(json.dumps(response),
                                 content_type='application/json')
-            awb_list.append(awb)
+                awb_list.append(awb)
+            else :
+                awb_before_list.append(awb_qs_list[i].status.code)
+                awb_list.append(awb_qs_list[i])
+                AWB.objects.filter(pk=awb_qs_list[i].id, status_id = pickup_status.id).update(status_id = sd_item_status.id)
+            awb_id_list.append(awb_list[i].id)
+            
+        unprocessed = AWB.objects.filter(Q(pk__in=awb_id_list),~Q(status_id=sd_item_status.id))
         # normalize
         weights = request.POST.getlist('weight')
         lengths = request.POST.getlist('length')
@@ -1087,8 +1150,25 @@ class ItemCreateMultiApi(View):
         awb_number_list = []
         for awb in awb_list:
             awb_number_list.append(awb.number)
-        
-        response = { 'success': 0, 'awb': awb_number_list, 'id': item_id_list}
+       
+        # this code for test only
+        awb_status_list = []
+        for awb in awb_list:
+            newawb = AWB.objects.get(pk = awb.id)
+            awb_status_list.append(newawb.status.code)
+       
+        if unprocessed:
+            number_list = []
+            for awb in awb_list:
+                number_list.append(awb.number)
+            response = {
+                'success' : -1,
+                'unprocessed' : number_list
+            }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
+
+        response = { 'success': 0, 'awbbefore' : awb_before_list, 'awbstatus' : awb_status_list, 'awb': awb_number_list, 'id': item_id_list}
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
 
@@ -1218,13 +1298,17 @@ class OutboundApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json')
 
-        outbound_status = ItemStatus.objects.get(code__iexact='OB')
+        outbound_status = ItemStatus.objects.get(code__exact='OB')
+        processed_status = ItemStatus.objects.get(code__exact='PR')
+        sd_status = ItemStatus.objects.get(code__exact='SD')
+        af_status = ItemStatus.objects.get(code__exact='AF')
+        previous_status = []
+        previous_status.append(processed_status.id)
+        previous_status.append(sd_status.id)
+        previous_status.append(af_status.id)
 
-        print 'test : ' + str(request.POST.getlist('bag_id_list'))
-        print 'shipment_id: '+ request.POST['shipment_id']
-        
         runsheet = Shipment(
-                transportation_id=request.POST['shipment_id'])
+                transportation_id=request.POST['transportation_id'])
         runsheet.origin_site_id = user.site.id
         runsheet.destination_site_id = request.POST['destination_id']
         runsheet.sent_by = user.fullname
@@ -1234,15 +1318,26 @@ class OutboundApi(View):
         
         bag_number_list = []
         bag_id_list = []
-        
+
         for item in request.POST.getlist('bag_id_list'):
             bag_number_list.append(item)
-        
+        transport = Transportation.objects.get(pk = request.POST['transportation_id'])
+        capacity = transport.capacity
+        volume = 0
+        not_inserted = []
+        unprocessed = []
+        awb_processed_list = []
+        awb_processed_id = []
         try:
             bag_id_qs = Bag.objects.filter(number__in=bag_number_list)
             for bag in list(bag_id_qs):
-                bag_id_list.append(bag.id)
-
+                volume_bag = bag.current_volume
+                volume = volume + volume_bag
+                if volume < capacity:
+                    bag_id_list.append(bag.id)
+                else:
+                    volume = volume - volume_bag
+                    not_inserted.append(bag.number)
             bag_item_qs = BagItem.objects.filter(
                             bag_id__in=bag_id_list)
             awb_id_list = []
@@ -1252,44 +1347,68 @@ class OutboundApi(View):
             #insert to item_bag_shipment
             item_bag_list = []
             for bag_id in bag_id_list:
-                print request.POST['shipment_id']
                 item_bag_list.append(ItemBagShipment(
-                                        shipment_id=request.POST['shipment_id'],
+                                        shipment_id=runsheet.id,
                                         bag_id=bag_id))
             ItemBagShipment.objects.bulk_create(item_bag_list)
 
             #insert to item shipment
-            print str(request.POST.getlist('awb_list'))
             awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
-            print ' stl q : ' + str(list(awb_qs))
             item_shipment_list = []
             for item in list(awb_qs):
-                awb_id_list.append(item.id)
-                item_shipment_list.append(ItemShipment(
-                                        shipment_id=request.POST['shipment_id'],
+                item_detail = Item.objects.get(awb_id = item.id)
+                volume_item = (item_detail.height * item_detail.width * item_detail.length)
+                volume = volume + volume_item
+                if volume < capacity:
+                    awb_id_list.append(item.id)
+                    item_shipment_list.append(ItemShipment(
+                                        shipment_id=runsheet.id,
                                         awb_id=item.id))
+                else:
+                    volume = volume - volume_item
+                    not_inserted.append(item.number)
+
             ItemShipment.objects.bulk_create(item_shipment_list)
 
+            # this code is for test only
+            # maybe can be used for further process
+            awb_before_list = []
+            for awb_id in awb_id_list:
+                awb = AWB.objects.get(pk = awb_id)
+                awb_before_list.append(awb.status.code)
+            
+
             #update status awb
-            AWB.objects.filter(pk__in=awb_id_list) \
+            AWB.objects.filter(pk__in=awb_id_list, status_id__in=previous_status) \
                     .update(status_id=outbound_status.id)
 
+            awb_processed = AWB.objects.filter(Q(pk__in=awb_id_list),Q(status_id=outbound_status.id))
+            
+            for awb in awb_processed:
+                awb_processed_id.append(awb.id)
+
+            for awb in awb_id_list:
+                if awb in awb_processed_id:
+                    awb_processed_list.append(awb)
+                else :
+                    awb_qs = AWB.objects.get(pk = awb)
+                    unprocessed.append(awb_qs.number)
+
             #update status item site
-            ItemSite.objects.filter(awb_id__in=awb_id_list) \
+            print(awb_processed_list)
+            ItemSite.objects.filter(awb_id__in=awb_processed_list) \
                     .update(item_status_id=outbound_status.id)
 
             #insert to history
             history_list = []
-            for awb_id in awb_id_list:
+            for awb_id in awb_processed_list:
                 history_list.append(History(
                                     awb_id=awb_id,
                                     status=outbound_status.name  \
                                             + ' [' + user.site.name + ']' ))
             History.objects.bulk_create(history_list)
-            print 'list' + str(history_list)
 
         except:
-            print traceback.format_exc()
             # return error response
             response = {
                 'success': -1,
@@ -1299,9 +1418,32 @@ class OutboundApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json')
 
+        # this code for test only
+        awb_status_list = []
+        for awb_id in awb_processed_list:
+            awb = AWB.objects.get(pk=awb_id)
+            awb_status_list.append(awb.status.code)
+
+        if unprocessed or not_inserted:
+            number_list = []
+            for awb in unprocessed:
+                number_list.append(awb)
+            for awb in not_inserted:
+                number_list.append(awb)
+            
+            response = {
+                'success' : -1,
+                'unprocessed' : number_list,
+                'message' : "Item with AWB number : " + ", ".join(number_list) + " is not processed"
+            }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
+
         # return response
         response = {
-            'success': 0
+            'success': 0,
+            'awbstatus' : awb_status_list,
+            'awbbefore' : awb_before_list
             }
         return HttpResponse(json.dumps(response),
                                         content_type='application/json')
@@ -1333,6 +1475,9 @@ class ItemOnProcess(View):
         try:
             on_process_status = ItemStatus.objects.get(code='OP')
             awb_id_list = []
+            unprocessed = []
+            awb_processed_id = []
+            awb_processed_list = []
             awb_qs = AWB.objects.filter(number__in=request.POST.getlist('awb_list'))
 
             for awb in list(awb_qs):
@@ -1453,7 +1598,12 @@ class BaggingApi(View):
         # create relation between bag and item/awb
         bag, created = Bag.objects.get_or_create(number=request.POST['bag_number'])
         processed_status = ItemStatus.objects.get(code='PR')
-        
+        af_status = ItemStatus.objects.get(code='AF')
+        sd_status = ItemStatus.objects.get(code='SD')
+        previous_status = []
+        previous_status.append(af_status.id)
+        previous_status.append(sd_status.id)
+
         # clear previous assignment
         if created is False:
             BagItem.objects.filter(bag_id=bag.id).delete()
@@ -1463,21 +1613,56 @@ class BaggingApi(View):
                     number__in=request.POST.getlist('awb_list'))
 
             awb_id_list= []
+            unprocessed = []
+            awb_processed_list = []
+            awb_processed_id = []
+            volume = 0
+            bag_capacity = bag.capacity
+            not_inserted = []
             for awb in list(awb_qs):
-                awb_id_list.append(awb.id)
+                item = Item.objects.get(awb_id = awb.id)
+                volume_item = item.height * item.length * item.width
+                volume = volume + volume_item
+                if volume < bag_capacity :
+                    awb_id_list.append(awb.id)
+                else:
+                    not_inserted.append(awb.number)
+                    volume = volume - volume_item
+
+            bag.current_volume = volume
+            print('bag current volume = ' + str(bag.current_volume))
+            bag.save()
+
+            # this code is for test only
+            # but maybe can used for further process
+            awb_before_list=[]
+            for awb_id in awb_id_list:
+                awb = AWB.objects.get(pk = awb_id)
+                awb_before_list.append(awb.status.code)
 
             #update awb status
-            AWB.objects.filter(pk__in=awb_id_list) \
+            AWB.objects.filter(pk__in=awb_id_list, status_id__in=previous_status) \
                     .update(status_id=processed_status.id)
 
+            awb_processed = AWB.objects.filter(Q(pk__in=awb_id_list),Q(status_id=processed_status.id))
+
+            for awb in awb_processed:
+                awb_processed_id.append(awb.id)
+
+            for awb in list(awb_qs):
+                if awb.id in awb_processed_id:
+                    awb_processed_list.append(awb_id)
+                else :
+                    unprocessed.append(awb.number)
+
             #update item site status
-            ItemSite.objects.filter(awb_id__in=awb_id_list) \
+            ItemSite.objects.filter(awb_id__in=awb_processed_list) \
                     .update(item_status_id=processed_status.id)
 
             #insert bag item and hisotry
             bag_item_list = []
             history_list = []
-            for awb_id in awb_id_list:
+            for awb_id in awb_processed_list:
                 bag_item_list.append(BagItem(
                                         bag_id= bag.id,
                                         awb_id=awb_id))
@@ -1498,9 +1683,32 @@ class BaggingApi(View):
             return HttpResponse(json.dumps(response),
                 content_type='application/json')
 
+        # this only used in tests
+        awb_status_list = []
+        for awb_id in awb_processed_list:
+            awb = AWB.objects.get(pk=awb_id)
+            awb_status_list.append(awb.status.code)
+        
+        if unprocessed or not_inserted:
+            number_list = []
+            for awb in unprocessed:
+                number_list.append(awb)
+            for awb in not_inserted:
+                number_list.append(awb)
+            response = {
+                'success' : -1,
+                'unprocessed' : number_list,
+                'message' : 'Item with AWB number : ' + ', '.join(number_list) + ' is unprocessed'
+            }
+            return HttpResponse(json.dumps(response),
+                    content_type = 'application/json')
+
         # return response
         response = {
-            'success': 0
+            'success': 0,
+            'message': 'Success',
+            'awbbefore': awb_before_list,
+            'awbstatus': awb_status_list
             }
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
@@ -1572,15 +1780,21 @@ class InboundApi(View):
         #location = Site.objects.get(pk=user.site.id)
 
         arrived_status = ItemStatus.objects.get(code='AF')
+        previous_status = []
+        previous_status_ul = ItemStatus.objects.get(code='UL')
+        previous_status.append(previous_status_ul.id)
+        previous_status_pu = ItemStatus.objects.get(code='PU')
+        previous_status.append(previous_status_pu.id)
+        previous_status_ob = ItemStatus.objects.get(code='OB')
+        previous_status.append(previous_status_ob.id)
 
         #TODO distinct awb and bag_id
         # check whether parameter is indeed awb or bag_id
         bag_number_list = []
         bag_id_list=[]
         awb_list = []
-        print("shipment id : " + request.POST['shipment_id']) 
         runsheet = Shipment.objects.filter(
-                transportation_id=request.POST['shipment_id']).update(received_by = user.fullname, received_at = datetime.now(), destination = user.site.address)
+                transportation_id=request.POST['transportation_id']).update(received_by = user.fullname, received_at = datetime.now(), destination = user.site.address)
 
         for item in request.POST.getlist('awb_list'):
             if item.startswith('BAG'):
@@ -1588,6 +1802,9 @@ class InboundApi(View):
             else:
                 awb_list.append(item)
 
+        awb_processed_id = []
+        awb_processed_list = []
+        unprocessed = []
         try:
             bag_id_qs = Bag.objects.filter(number__in=bag_number_list)
             for bag in list(bag_id_qs):
@@ -1605,15 +1822,34 @@ class InboundApi(View):
             for awb in list(awb_qs):
                 awb_id_list.append(awb.id)
 
-            print str(awb_id_list)
-            #update status AWB
-            AWB.objects.filter(pk__in=awb_id_list) \
-                    .update(status_id=arrived_status.id)
+            # this code for test only
+            awb_before_list = []
+            for awb_id in awb_id_list:
+                awb = AWB.objects.get(pk = awb_id)
+                awb_before_list.append(awb.status.code)
             
+            #update status AWB
+            AWB.objects.filter(pk__in=awb_id_list, status_id__in=previous_status) \
+                    .update(status_id=arrived_status.id)
+           
+            awb_processed = AWB.objects.filter(Q(pk__in=awb_id_list),Q(status_id=arrived_status.id))
+
             # insert item site and history
             item_site_list = []
             history_list = []
-            for awb_id in awb_id_list:
+
+            for awb in awb_processed:
+                awb_processed_id.append(awb.id)
+
+            for awb in awb_id_list:
+                if awb in awb_processed_id:
+                    awb_processed_list.append(awb)
+                else :
+                    awb_qs = AWB.objects.get(pk = awb)
+                    unprocessed.append(awb_qs.number)
+
+            print(awb_processed_list)
+            for awb_id in awb_processed_list:
                 item_site_list.append(ItemSite(
                                         awb_id=awb_id,
                                         site_id=user.site.id,
@@ -1634,10 +1870,31 @@ class InboundApi(View):
                     }
             return HttpResponse(json.dumps(response),
                         content_type='application/json')
+        
+        # this code is for test only
+        awb_status_list = []
+        for awb_id in awb_id_list:
+            awb = AWB.objects.get(pk = awb_id)
+            awb_status_list.append(awb.status.code)
+
+        if unprocessed :
+            number_list = []
+            for awb in unprocessed:
+                number_list.append(awb)
+            print(number_list)
+            response = {
+                'success': -1,
+                'unprocessed' : number_list,
+                'message': "Item with AWB number : " + ", ".join(number_list) + " is not processed due to unqualified item status"
+            }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
 
         # return response
         response = {
-            'success': 0
+            'success': 0,
+            'awbstatus': awb_status_list,
+            'awbbefore': awb_before_list
             }
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
@@ -1788,7 +2045,6 @@ class RunsheetCreateApi(View):
 #user_id, shipment_id, smu
 class RunsheetUpdateApi(View):
     def post(self, request):
-        print("shipment id : " + request.POST['shipment_id'])
         print("smu : " + request.POST['smu'])
         if not request.POST['user_id'] \
                 or not request.POST['smu'] \
@@ -1801,11 +2057,40 @@ class RunsheetUpdateApi(View):
                         content_type='application/json')
 
         user = CustomUser.objects.get(pk=request.POST['user_id'])
-        
+        uplifting_status = ItemStatus.objects.get(code__exact="UL")
+        outbound_status = ItemStatus.objects.get(code__exact="OB")
+
+        awb_in_plane_list = ItemShipment.objects.filter(shipment_id=request.POST['shipment_id'])
+
+        awb_id_list = []
+        for awb_id in list(awb_in_plane_list):
+            awb_id_list.append(awb_id.awb_id)
+
+        bag_in_plane_list = ItemBagShipment.objects.filter(shipment_id=request.POST['shipment_id'])
+
+        bag_id_list = []
+        for bag_id in list(bag_in_plane_list):
+            bag_id_list.append(bag_id.bag_id)
+
+        awb_in_bag_list = BagItem.objects.filter(bag_id__in=bag_id_list)
+
+        for awb_id in list(awb_in_bag_list):
+            awb_id_list.append(awb_id.awb_id)
+
+        # this code is test only
+        awb_before_list = []
+        for awb_id  in awb_id_list:
+            awb = AWB.objects.get(pk = awb_id)
+            awb_before_list.append(awb.status.code)
+
         try:
             # update smu
             Shipment.objects.filter(pk=request.POST['shipment_id']) \
                     .update(smu=request.POST['smu'])
+            
+            AWB.objects.filter(pk__in=awb_id_list, status_id=outbound_status.id).update(status_id = uplifting_status.id)
+        
+            unprocessed = AWB.objects.filter(Q(pk__in=awb_id_list),~Q(status_id=uplifting_status.id))
         except:
             print traceback.format_exc()
             response = {
@@ -1815,9 +2100,29 @@ class RunsheetUpdateApi(View):
             return HttpResponse(json.dumps(response),
                     content_type='application/json')
 
+        # this code for test only
+        awb_status_list = []
+        for awb_id in awb_id_list:
+            awb = AWB.objects.get(pk = awb_id)
+            awb_status_list.append(awb.status.code)
+        
+        if unprocessed:
+            number_list = []
+            for awb in unprocessed:
+                number_list.append(awb.number)
+            response = {
+                'success' : -1,
+                'unprocessed' : number_list,
+                'message': "Item with AWB number : " + ", ".join(number_list) + "is not processed due to unqualified item status"
+            }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
+
         # return response
         response = {
-            'success': 0
+            'success': 0,
+            'awbstatus': awb_status_list,
+            'awbbefore': awb_before_list
             }
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
@@ -1923,17 +2228,42 @@ class ItemDeliveryCreateApi(View):
         for awb in list(awb_qs):
             awb_id_list.append(awb.id)
 
+        # this code is for test only
+        awb_before_list = []
+        for awb_id in awb_id_list:
+            awb = AWB.objects.get(pk = awb_id)
+            awb_before_list.append(awb.status.code)
+
+        unprocessed = []
+        awb_processed_id = []
+        awb_processed_list = []
         try:
             status = None
             
             history_list = []
             delivery_list = []
+            after_status = []
             if is_courier:
                 status = ItemStatus.objects.get(code='WC')
-                AWB.objects.filter(pk__in=awb_id_list) \
+                af_status = ItemStatus.objects.get(code='AF')
+                after_status.append(status.id)
+                AWB.objects.filter(pk__in=awb_id_list, status_id = af_status.id) \
                     .update(status_id=status.id)
+                
+                
+                awb_processed = AWB.objects.filter(Q(pk__in=awb_id_list),Q(status_id__in=after_status))
+                
+                for awb in awb_processed:
+                    awb_processed_id.append(awb.id)
 
-                for awb_id in awb_id_list:
+                for awb in awb_id_list:
+                    if awb in awb_processed_id:
+                        awb_processed_list.append(awb)
+                    else :
+                        awb_qs = AWB.objects.get(pk = awb)
+                        unprocessed.append(awb_qs.number)
+                
+                for awb_id in awb_processed_list:
                     delivery_list.append(Delivery(
                                         awb_id=awb_id,
                                         courier_id=request.POST['courier_id'],
@@ -1943,13 +2273,28 @@ class ItemDeliveryCreateApi(View):
                                         awb_id=awb_id,
                                         status = status.name))
 
-                                
+                ItemSite.objects.filter(site_id=user.site.id, awb_id__in=awb_processed_list).update(item_status_id=status.id)
+
             else:
                 status = ItemStatus.objects.get(code='FW')
-                AWB.objects.filter(pk__in=awb_id_list) \
+                af_status = ItemStatus.objects.get(code='AF')
+                after_status.append(status.id)
+                AWB.objects.filter(pk__in=awb_id_list, status_id = af_status.id) \
                     .update(status_id=status.id)
 
-                for awb_id in awb_id_list:
+                awb_processed = AWB.objects.filter(Q(pk__in=awb_id_list),Q(status_id__in=after_status))
+                
+                for awb in awb_processed:
+                    awb_processed_id.append(awb.id)
+
+                for awb in awb_id_list:
+                    if awb in awb_processed_id:
+                        awb_processed_list.append(awb)
+                    else:
+                        awb_qs = AWB.objects.get(pk = awb)
+                        unprocessed.append(awb_qs.number)
+                
+                for awb_id in awb_processed_list:
                     delivery_list.append(Delivery(
                                         awb_id=awb_id,
                                         forwarder_id=request.POST['forwarder_id'],
@@ -1958,11 +2303,11 @@ class ItemDeliveryCreateApi(View):
                     history_list.append(History(
                                         awb_id=awb_id,
                                         status = status.name))
-
-            ItemSite.objects.filter(
+                ItemSite.objects.filter(
                                 site_id=user.site.id,
-                                awb_id__in=awb_id_list).update(
+                                awb_id__in=awb_processed_list).update(
                                 item_status_id=status.id)
+
             Delivery.objects.bulk_create(delivery_list)
             History.objects.bulk_create(history_list)
 
@@ -1976,9 +2321,29 @@ class ItemDeliveryCreateApi(View):
             return HttpResponse(json.dumps(response),
                         content_type='application/json')
 
+        # this code is for test only
+        awb_status_list = []
+        for awb_id in awb_id_list:
+            awb = AWB.objects.get(pk = awb_id)
+            awb_status_list.append(awb.status.code)
+        
+        if unprocessed:
+            number_list = []
+            for awb in unprocessed:
+                number_list.append(awb)
+            response = {
+                'success' : -1,
+                'unprocessed' : number_list,
+                'message': "Item with AWB number : " + ", ".join(number_list) + " is not processed due to unqualified item status"
+            }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
+
         # return response
         response = {
-            'success': 0
+            'success': 0,
+            'awbstatus': awb_status_list,
+            'awbbefore': awb_before_list
             }
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
@@ -1997,7 +2362,7 @@ class ItemDeliveryUpdateApi(View):
             return HttpResponse(json.dumps(response),
                         content_type='application/json')
 
-        
+        print('data list : ' + str(json.loads(request.POST['data'])))
         data_list = json.loads(request.POST['data'])
         user = None
 
@@ -2006,6 +2371,7 @@ class ItemDeliveryUpdateApi(View):
             user = CustomUser.objects.get(pk=request.POST['user_id'])
             delivery_status = ItemStatus.objects.get( 
                                         code=request.POST['status_code'])
+            
         except:
             response = {
                     'success': -1,
@@ -2014,19 +2380,27 @@ class ItemDeliveryUpdateApi(View):
             return HttpResponse(json.dumps(response),
                         content_type='application/json')
 
-
-        
-
         status_qs = ItemStatus.objects.filter(code__in=['WC','FW'])
         status_delivery_id = []
         for status in list(status_qs):
             status_delivery_id.append(status.id)
 
+        print(status_delivery_id)
+        # this code is for test only
+        awb_before_list = []
+        for data_dict in data_list:
+            awb = AWB.objects.get(number = data_dict['awb'])
+            awb_before_list.append(awb.status.code)
+
+        awb_number_list = []
+        unprocessed_list = []
         try:
             for data_dict in data_list:
-                self.update_delivery(data_dict)
-           
-            
+                unprocessed = self.update_delivery(user, status_delivery_id,delivery_status, data_dict)
+                awb_number_list.append(data_dict['awb'])
+
+                if unprocessed:
+                    unprocessed_list.append(unprocessed)
         except:
             print traceback.format_exc()
             response = {
@@ -2036,52 +2410,80 @@ class ItemDeliveryUpdateApi(View):
             return HttpResponse(json.dumps(response),
                         content_type='application/json')
 
+
+        # this code is for test only
+        awb_status_list = []
+        for awb_id in awb_number_list:
+            awb = AWB.objects.get(number = awb_id)
+            awb_status_list.append(awb.status.code)
+            
+        if unprocessed:
+            response = {
+                'success' : -1,
+                'unprocessed' : unprocessed_list,
+                'message': "Item with AWB number : " + ", ".join(unprocessed_list) + " is not processed due to unqualified item status"
+            }
+            return HttpResponse(json.dumps(response),
+                    content_type='application/json')
+        
         # return response
         response = {
-            'success': 0
+            'success': 0,
+            'awbstatus': awb_status_list,
+            'awbbefore': awb_before_list
             }
         return HttpResponse(json.dumps(response),
                 content_type='application/json')
        
-    def update_delivery(self, data_dict):
-        awb = AWB.objects.get(data_dict['awb'])
-        if data_dict['status_code'] is 'SC' \
-                or data_dict['status_code'] is 'OK':
-            Delivery.objects.filter(site_id=user.site.id, 
+    def update_delivery(self, user, status_delivery_id, delivery_status, data_dict):
+        awb = AWB.objects.get(number=data_dict['awb'])
+        if data_dict['status'] == 'SC' \
+                or data_dict['status'] == 'OK':
+            delivered = Delivery.objects.filter(site_id=user.site.id, 
                                     awb_id=awb.id,
                                     status_id__in=status_delivery_id) \
                             .update(status_id=delivery_status.id,
                                     receiver_name=data_dict['receiver_name'],
-                                    receive_date=self.convert_to_datetime(
-                                        data_dict['receive_date']))
-            awb.status_id=delivery_status.id
-            awb.save()
-            ItemSite.objects.filter(site_id=user.site.id,
-                                        item_status_id=status.id,
+                                    receive_date=(
+                                        data_dict['date']))
+           
+            if delivered > 0:
+                awb.status_id=delivery_status.id
+                awb.save()
+                ItemSite.objects.filter(site_id=user.site.id,
+                                        item_status_id__in=status_delivery_id,
                                         awb_id=awb.id) \
                             .update(item_status_id=delivery_status.id)
             
-            History(awb_id=awb.id, 
+                History(awb_id=awb.id, 
                     status=delivery_status.name \
                             + ' [' + data_dict['receiver_name'] + ' at ' \
-                            + data_dict['receive_date'] + ']').save()
+                            + data_dict['date'] + ']').save()
                 
+            else :
+                unprocessed = awb.number
+                return unprocessed
+
         else:
-            fail_status = ItemStatus.objects.get(code=data_dict['status_code'])
-            Delivery.objects.filter(site_id=user.site.id, 
+            fail_status = ItemStatus.objects.get(code=data_dict['status'])
+            delivered = Delivery.objects.filter(site_id=user.site.id, 
                                     awb_id=awb.id,
                                     status_id__in=status_delivery_id) \
                             .update(status_id=fail_status.id)
-            awb.status_id=delivery_status.id
-            awb.save()
-            ItemSite.objects.filter(site_id=user.site.id,
-                                        item_status_id=status.id,
+            
+            if delivered > 0:
+                awb.status_id=delivery_status.id
+                awb.save()
+                ItemSite.objects.filter(site_id=user.site.id,
+                                        item_status_id__in=status_delivery_id,
                                         awb_id=awb.id) \
                                 .update(item_status_id=fail_status.id)
 
-            History(awb_id=awb.id, 
+                History(awb_id=awb.id, 
                     status=fail_status.name).save()
-
+            else :
+                unprocessed = awb.number
+                return unprocessed
 
     # format date in string: Sep 1 2016  1:33PM
     def convert_to_datetime(self, date_in_string):
@@ -2498,5 +2900,209 @@ class BagDeleteApi(View):
         response = { 'success': 0 }
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
+
+class DocumentReadApi(View):
+    def get(self, request):
+        documents = ShippingDocument.objects.all()
+        data = list()
+        item_list = list()
+        for document in documents:
+            items = Item.objects.filter(shipping_document=document.id)
+            for item in items:
+                item_list.append(item.awb.number + ' - ' + item.good_name)
+
+            if document.status :
+                status = document.status.code  + ' - ' + document.status.name
+                status_pk = str(document.status.pk)
+            else :
+                status = ''
+                status_pk = ''
+            # get item which status is PU (Pick Up)
+            t = {
+                'number': document.number,
+                'items': '<br>'.join(item_list),
+                'status': status,
+                'status_pk': status_pk, 
+                'action': document.pk,
+            }
+            data.append(t)
+
+        response = { 
+            'success':0, 
+            'data': data}
+        return HttpResponse(json.dumps(response), content_type='application/json')
+
+class DocumentSentReadApi(View):
+    def get(self, request):
+        sent_status = ItemStatus.objects.get(code="DS")
+        documents = ShippingDocument.objects.filter(status_id=sent_status.id)
+        data = list()
+        item_list = list()
+        for document in documents:
+            items = Item.objects.filter(shipping_document=document.id)
+            for item in items:
+                item_list.append(item.awb.number + ' - ' + item.good_name)
+
+            if document.status :
+                status = document.status.code  + ' - ' + document.status.name
+                status_pk = document.status.pk
+            else :
+                status = ''
+                status_pk = ''
+            # get item which status is PU (Pick Up)
+            t = {
+                'number': document.number,
+                'items': '<br>'.join(item_list),
+                'status': status,
+                'status_pk': status_pk, 
+                'action': document.pk,
+            }
+            data.append(t)
+
+        response = { 
+            'success':0, 
+            'data': data}
+        return HttpResponse(json.dumps(response), content_type='application/json')
+
+class DocumentCheckedReadApi(View):
+    def get(self, request):
+        checked_status = ItemStatus.objects.get(code="DC")
+        print(checked_status.id)
+        documents = ShippingDocument.objects.filter(status_id=checked_status.id)
+        data = list()
+        item_list = list()
+        for document in documents:
+            items = Item.objects.filter(shipping_document=document.id)
+            for item in items:
+                item_list.append(item.awb.number + ' - ' + item.good_name)
+
+            if document.status :
+                status = document.status.code  + ' - ' + document.status.name
+                status_pk = str(document.status.pk)
+            else :
+                status = ''
+                status_pk = ''
+            # get item which status is PU (Pick Up)
+            t = {
+                'number': document.number,
+                'items': '<br>'.join(item_list),
+                'status': status,
+                'status_pk': status_pk, 
+                'action': document.pk,
+            }
+            data.append(t)
+
+        response = { 
+            'success':0, 
+            'data': data}
+        return HttpResponse(json.dumps(response), content_type='application/json')
+
+class DocumentReceivedReadApi(View):
+    def get(self, request):
+        received_status = ItemStatus.objects.get(code="DR")
+        print(received_status)
+        documents = ShippingDocument.objects.filter(status_id=received_status.id)
+        data = list()
+        item_list = list()
+        for document in documents:
+            items = Item.objects.filter(shipping_document=document.id)
+            for item in items:
+                item_list.append(item.awb.number + ' - ' + item.good_name)
+
+            if document.status :
+                status = document.status.code  + ' - ' + document.status.name
+                status_pk = str(document.status.pk)
+            else :
+                status = ''
+                status_pk = ''
+            # get item which status is PU (Pick Up)
+            t = {
+                'number': document.number,
+                'items': '<br>'.join(item_list),
+                'status': status,
+                'status_pk': status_pk, 
+                'action': document.pk,
+            }
+            data.append(t)
+
+        response = { 
+            'success':0, 
+            'data': data}
+        return HttpResponse(json.dumps(response), content_type='application/json')
+
+class DocumentDeliveredReadApi(View):
+    def get(self, request):
+        delivered_status = ItemStatus.objects.get(code="DD")
+        print(delivered_status.id)
+        documents = ShippingDocument.objects.filter(status_id=delivered_status.id)
+        data = list()
+        item_list = list()
+        for document in documents:
+            items = Item.objects.filter(shipping_document=document.id)
+            for item in items:
+                item_list.append(item.awb.number + ' - ' + item.good_name)
+
+            if document.status :
+                status = document.status.code  + ' - ' + document.status.name
+                status_pk = str(document.status.pk)
+            else :
+                status = ''
+                status_pk = ''
+            # get item which status is PU (Pick Up)
+            t = {
+                'number': document.number,
+                'items': '<br>'.join(item_list),
+                'status': status,
+                'status_pk': status_pk, 
+                'action': document.pk,
+            }
+            data.append(t)
+
+        response = { 
+            'success':0, 
+            'data': data}
+        return HttpResponse(json.dumps(response), content_type='application/json')
+
+class DocumentUpdateApi(View):
+    def post(self, request):
+        print ("enter here")
+        # form validation
+        if not request.POST['pk'] \
+                or not request.POST['number'] \
+                or not request.POST['status']:
+            response = {
+                'success' : -1,
+                'message' : "Parameters are not complete",
+            }
+
+            return HttpResponse(json.dumps(response),
+                                content_type='application/json')
+
+        try:
+            document = ShippingDocument.objects.get(pk = request.POST['pk'])
+        except ShippingDocument.DoesNotExist:
+            response = {
+                'success' : -1,
+                'message' : "Fail to update",
+            }
+            return HttpResponse(json.dumps(response),
+                                    content_type='application/json')
+
+        try:
+            status = ItemStatus.objects.get(pk = request.POST['status'])
+            document.status_id = status
+            document.save()
+        except DatabaseError:
+            response = {
+                'success': -1,
+                'message': "Fail to update",
+            }
+            return HttpResponse(json.dumps(response),
+                                    content_type='application/json')
+
+        response = { 'success' : 0 }
+        return HttpResponse(json.dumps(response),
+                                content_type='application/json')
+
 
 

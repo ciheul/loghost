@@ -155,7 +155,7 @@ class AgentItemCreateApi(View):
             return HttpResponse(json.dumps(response),
                                 content_type='application/json') 
 
-        response = { 'success': 0, 'awb': awb.number, 'id': item.id}
+        response = { 'success': 0, 'awbstatus' : awb.status.code, 'awb': awb.number, 'id': item.id}
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
 
@@ -236,7 +236,7 @@ class AgentItemCreateMultiApi(View):
                                 content_type='application/json') 
 
         print(tariff_list[0])
-        sd_item_status = ItemStatus.objects.get(code__exact='SD')
+        sd_item_status = ItemStatus.objects.get(code__exact='PU')
 
         # TODO create AWB Generator
         awb_list = []
@@ -470,7 +470,11 @@ class AgentItemCreateMultiApi(View):
         for awb in awb_list:
             awb_number_list.append(awb.number)
         
-        response = { 'success': 0, 'awb': awb_number_list, 'id': item_id_list}
+        awb_status_list = []
+        for awb in awb_list:
+            awb_status_list.append(awb.status.code)
+
+        response = { 'success': 0, 'awbstatus' : awb_status_list, 'awb': awb_number_list, 'id': item_id_list}
         return HttpResponse(json.dumps(response),
                             content_type='application/json') 
 

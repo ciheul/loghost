@@ -1,0 +1,132 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="ui main container" style="margin-top:6em;margin-bottom:6em">
+  <h1 class="ui header" style="margin-bottom:1em">Document Received</h1>
+
+  <table id="report" class="ui celled table">
+    <thead>
+      <tr>
+          <th>Name</th>
+          <th>Item</th>
+          <th>Document Status</th>
+          <th>Action</th>
+      </tr>
+    </thead>
+    </table>
+</div>
+
+<div id="modal-container"></div>
+
+<script type="text/template" id="update-document-modal-template">
+    <div class="ui small modal" id="update-document-modal">
+        <i class="close icon"></i>
+        <div class="header">Update Document</div>
+        <div class="content">
+            <form class="ui form" id="udpate-document-form">
+                <input type="hidden" name="pk" value="<%= pk %>">
+                <div class="field">
+                    <label>Document Name</label>
+                    <input type="text" name="number" value="<%= number %>">
+                </div>
+                <div class="field">
+                    <label>Status</label>
+                    <select class="ui fluid dropdown" name="status">
+                        {% for status in statuses %}
+                        <option value="{{ status.pk }}" <% if (status_pk === {{ status.pk }}) { %>selected<% } %>>{{ status.code }} - {{ status.name }} </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="actions">
+            <div class="ui black deny button">Cancel</div>
+            <div class="ui green button" id="update-document-button">Update Document</div>
+        </div>
+    </div>        
+</script>
+
+{% endblock %}
+
+{% block javascript %}
+<script>
+  $.fn.serializeObject = function()
+  {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if(o[this.name] !== undefined) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+  };
+
+  $('#report').DataTable({
+    searching: false,
+    bLengthChange: false,
+    bInfo: false,
+    {# serverSide: true, #}
+    ajax: {
+      url: "{% url 'api-document-received' %}",
+      type: 'GET'
+    },
+    columns: [
+      {data: 'number', className: 'dt-left'},
+      {data: 'items', className: 'dt-left' },
+      {data: 'status', className: 'dt-left'},
+      {data: 'action', className: 'dt-left'},  
+    ],
+    columnDefs: [
+      {
+        targets: -1,  
+        render: function(data, type, row, meta) {
+          return ''
+            + '<div class="mini ui blue button" data-action="update" data-pk=' + row.action + ' data-number="' + row.number + '" data-status="' + row.status_pk + '">Update</div>';
+        }
+      }
+    ]
+  });
+
+  $('#report tbody').click('button', function(e) {
+      var button = $(e.target);
+
+      if (button.data('action') === 'update') {
+          var templateFunc = _.template($('#update-document-modal-template').html());
+
+          console.log(button.data('pk'))
+          var modalTemplate = templateFunc({
+              pk : button.data('pk'),
+              number : button.data('number'),
+              status_pk : button.data('status'),
+          });
+
+          $('#modal-container').append(modalTemplate);
+
+          $('#update-document-modal').modal({
+              onHidden: function() { $('.ui.dimmer').empty(); }
+          }).modal('show');
+
+          $('#update-document-button').click(function(e) {
+              var data = $('form').serializeObject();
+              data.csrfmiddlewaretoken = Cookies.get('csrftoken');
+
+              $.ajax({
+                  url: "{% url 'api-document-update' %}",
+                  method: 'POST',
+                  data: data,
+              }).done(function(response) {
+                window.location.reload();
+              });
+          });
+
+          $('.dropdown').dropdown();  
+      }
+    });
+</script>
+{% endblock %}

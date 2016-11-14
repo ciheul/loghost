@@ -163,6 +163,7 @@
 </div>
 
 <div id="modal-container"></div>
+<div id="message-container"></div>
 
 <div class="ui small modal" id="add-transport-modal">
   <i class="close icon"></i>
@@ -336,7 +337,9 @@
     <div class="actions">
       <div class="ui positive button add-transport">Add</div>
     </div>
-  </div>
+</div>
+
+
 </script>
   
 </script>
@@ -429,15 +432,27 @@
             user_id: {{ user_id }},
             bag_id_list: data.bags,
             awb_list: data.awbs,
-            shipment_id: $('#transportation option:selected').val(),
+            transportation_id: $('#transportation option:selected').val(),
             destination_id: $('#destination option:selected').val()    
         },    
        
     }).done(function(response) {
-        resetTable();        
+        resetTable();
+
+        $('#message-container').empty();
+
         if (response.success === -1) {
-            console.log('error inputs', response);
-            return false;
+            var messageTemplateFunc = _.template($('#message-error-template').html());
+            var messageTemplate = messageTemplateFunc({ message : response.message });
+            $('#message-container').append(messageTemplate);
+
+            $('.message .close').on('click', function() {
+                $(this).closest('.message').transition('fade');
+            });
+
+            window.scrollTo(0, document.body.scrollHeight);
+
+            return;
         };
         awbCollection = [];
         bagCollection = []; 
@@ -446,6 +461,13 @@
     return false;
   });
 
+</script>
+
+<script type="text/template" id="message-error-template">
+    <div class="ui negative message" style="margin-top:6mm">
+        <i class="close icon"></i>
+        <div class="header"><%=message %></div>
+    </div>
 </script>
 
 <script type="text/javascript">

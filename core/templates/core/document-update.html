@@ -5,44 +5,61 @@
   <h1 class="ui header ui form" style="margin-bottom:1em">
     <div class="fields">
       <div class="thirteen wide field">
-        Arrival Bag
+        Document Update
       </div>
 
       <div class="three wide field">
-        <button id="confirm-bag-awbs" class="ui button green right floated">Confirm Bag</button>
+        <button id="confirm-bag-awbs" class="ui button green right floated">Confirm Delivery</button>
       </div>
 
     </div>
 
   </h1>
 
-  <form class="ui form" id="submit-shipment-form">
-    <div class="fields">
-      <div class="six wide field">
-        <input class="shipment_text" type="text" name="shipment_id" placeholder="SHIPMENT_ID">
-      </div>
-      <div class="two wide field">
-        <button class="ui button blue" type="submit"><i class="shipping icon"></i> Submit</button>
-        <!-- <input class="ui button blue" type="submit" value="Submit BAG"> -->
-      </div>
-    </div>
-  </form>
- 
   <form class="ui form" id="submit-bag-form">
+    
     <div class="fields">
-      <div class="six wide field">
-        <input class="bag-text" type="text" name="bag_id" placeholder="BAG_ID">
+      <div class="five wide field">
+        <input class="bag-text" type="text" name="awb" placeholder="AWB">
       </div>
+
+      <div class="five wide field">
+
+        <select id="status" class="ui fluid dropdown" id="status"  name="status">
+          <option value="">Choose Status</option>
+          {% for stats in status %}
+            <option value="{{ stats.code }}">{{ stats.code }} - {{ stats.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
       <div class="two wide field">
         <button class="ui button blue" type="submit"><i class="shopping basket icon"></i> Submit</button>
       </div>
+
     </div>
+
+    <div class="fields" id="delivered-panel" style="disply:none;">
+      <div class="five wide field">
+        <input id="receiver_name" type="text" name="receiver_name" placeholder="receiver name">
+      </div>
+
+      <div class="five wide field">
+        <input id="date" type="date" name="date">
+      </div>
+
+      <div class="two wide field">
+
+      </div>
+        
+    </div>
+  
   </form>
  
   <table id="arrival-table" class="ui celled table">
     <thead>
       <tr>
-        <th>Bag ID</th>
+        <th>AWB</th>
         <th>Status</th>
         <th>Action</th>
       </tr>
@@ -82,6 +99,9 @@
 {% endblock %}
 
 {% block javascript %}
+<script type="text/javascript">
+  $('#delivered-panel').hide();
+</script>
 
 <script type="text/javascript">
   var collections = [];
@@ -125,34 +145,94 @@
 </script>
 
 <script type="text/javascript">
+  var delivered = ['SC', 'OK'];
+  var cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+  var cour_select = cour_text.split(' ', 1)[0];
+  
+  $('.ui.dropdown').on('change', function() {
+    cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+    cour_select = cour_text.split(' ', 1)[0];
+    $('#delivered-panel').hide();
+    if(jQuery.inArray(cour_select, delivered) !== -1) {
+      console.log('trueh', cour_select, delivered, cour_text);
+      $('#delivered-panel').show();
+      return;
+    }
+
+  });
+
   $('#submit-bag-form').submit(function() {
     resetErrorView();
     
-    marker = 1;
-    var data = $('#submit-bag_id-form').serializeObject();
+    var data = $('#submit-awb-form').serializeObject();
+    var cour = $('.ui.fluid.dropdown.selection').dropdown('get value');
+    var errCounter = 0;
+    console.log(cour);
+
     if ($('.bag-text').val() === '') {
       error_msg['bag'] = true;
+      errCounter++;
+    }
+
+    if ($('#date').val() === '') {
+      error_msg['date'] = true;
+      errCounter++;
+    }
+
+    if ($('#receiver_name').val() === '') {
+      error_msg['receiver_name'] = true;
+      errCounter++;
+    }
+
+    if (cour === "") {
+      error_msg['cour'] = true;
+      errCounter++;
+    }
+
+    if (errCounter > 0) {
       setErrorView(error_msg);
-      console.log('empty bag_id value');
       return false;
     }
 
     data.csrfmiddlewaretoken = Cookies.get('csrftoken');
 
-    console.log('been submitted');
+    console.log('been submitted', data);
     
     var t = $('#arrival-table').DataTable();
 
     t.row.add( [
       $('.bag-text').val(),
-      'AF - Arrival Sorter',
+      $('#status option:selected').text(),
+      //'AF - Arrival Sorter',
       value,
     ] ).draw( true );
     
+    cour_text = $('.ui  .fluid.dropdown.selection').dropdown('get text');
+    cour_select = cour_text.split(' ', 1)[0];
+
+    var dataPushed = {};
+
+    dataPushed = {
+      awb: $('.bag-text').val(),
+      status: cour_select
+    };
+
+    if(jQuery.inArray(cour_select, delivered) !== -1) {
+      dataPushed = {
+        awb: $('.bag-text').val(),
+        status: cour_select,
+        receiver_name: $('#receiver_name').val(),
+        date: $('#date').val()
+      };
+    }
+
     // adding to new Collection
-    collections.push($('.bag-text').val());
+    collections.push(dataPushed);
+    //collections.push(JSON.stringify(dataPushed));
 
     $('.bag-text').val('');
+    $('#date').val('');
+    $('#receiver_name').val('');
     $('.bag-text').focus(); 
 
     console.log('submit-bag-form', data);
@@ -175,36 +255,38 @@
     console.log('data to send --> ', collections);
     
     $.ajax({
-       url: "{% url 'api-inbound' %}", 
-       method: "POST",
-       dataType: 'json',
-       traditional: true,
-       data: {
-            transportation_id: $('.shipment_text').val(),
-            user_id: {{ user_id }},
-            awb_list: collections
-       },
+      url: "{% url 'api-delivery-update' %}", 
+      method: "POST",
+      traditional: true,
+      dataType: 'json',
+      data: {
+        data: JSON.stringify(collections),
+        user_id: {{user_id}},
+        status_code: $('#status option:selected').val()
+      },
 
-     }).done(function(response) {
-            resetTable();
-            collections = [];
+    }).done(function(response) {
+          resetTable();
+      collections = [];
+      $('.ui.fluid.dropdown.selection').dropdown('clear') 
+    // or $('#courier').dropdown('get value');
 
-            $('#message-container').empty();
+      $('#message-container').empty();
 
-            if (response.success === -1) {
-                var messageTemplateFunc = _.template($('#message-error-template').html());
-                var messageTemplate = messageTemplateFunc({ message : response.message });
-                $('#message-container').append(messageTemplate);
+      if (response.success === -1) {
+        var messageTemplateFunc = _.template($('#message-error-template').html());
+        var messageTemplate = messageTemplateFunc({ message : response.message });
+        $('#message-container').append(messageTemplate);
 
-                $('.message .close').on('click', function() {
-                    $(this).closest('.message').transition('fade');
-                });
+        $('.message .close').on('click', function() {
+            $(this).closest('.message').transition('fade');
+        });
 
-                window.scrollTo(0, document.body.scrollHeight);
+        window.scrollTo(0, document.body.scrollHeight);
 
-                return;
-            }
-                
+        return;
+     }  
+
     });
 
     return false;
@@ -228,10 +310,29 @@
       $('.bag-text').parent().addClass('error');
       $('.bag-text').parent().append(err_template);
     }
+
+    if (error.cour) {
+      $('#status').parent().addClass('error');
+      $('#status').parent().parent().append(err_template);
+    }
+
+    if (error.date) {
+      $('#date').parent().addClass('error');
+      console.log(';set');
+    }
+
+    if (error.receiver_name) {
+      $('#receiver_name').parent().addClass('error');
+      console.log(';set');
+    }
+
   }
 
   function resetErrorView() {
     $('.bag-text').parent().removeClass('error');
+    $('#date').parent().removeClass('error');
+    $('#receiver_name').parent().removeClass('error');
+    $('#status').parent().removeClass('error');
     $('.error-msg').remove();
   }
 

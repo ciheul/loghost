@@ -46,6 +46,13 @@ urlpatterns = [
         name='core-inventory'),
     url(r'^management/transportation/$', views.TransportationManagementView.as_view(), name='core-transportation'),
     url(r'^management/courier/$', views.CourierManagementView.as_view(), name='core-courier'), 
+   
+    # DOCUMENT
+    url(r'^management/document/$', views.DocumentManagementView.as_view(), name='core-document-list'),
+    url(r'^management/document/sent/$', views.DocumentSentManagementView.as_view(), name='core-document-sent'),
+    url(r'^management/document/checked/$', views.DocumentCheckedManagementView.as_view(), name='core-document-checked'),
+    url(r'^management/document/received/$', views.DocumentReceivedManagementView.as_view(), name='core-document-received'),
+    url(r'^management/document/delivered/$', views.DocumentDeliveredManagementView.as_view(), name='core-document-delivered'),
     
     # API
     url(r'^api/item/insert/$',api.ItemInsertApi.as_view(), 
@@ -133,6 +140,14 @@ urlpatterns = [
     # PICK UP
     url(r'^api/site/pickup/', api.PickUpReadApi.as_view(), name='api-pickup-read'),
 
+    # DOCUMENT
+    url(r'^api/document/$', api.DocumentReadApi.as_view(), name='api-document-read'),
+    url(r'^api/document/update/$', api.DocumentUpdateApi.as_view(), name='api-document-update'),
+    url(r'^api/document/sent/$', api.DocumentSentReadApi.as_view(), name='api-document-sent'),
+    url(r'^api/document/checked/$', api.DocumentCheckedReadApi.as_view(), name='api-document-checked'),
+    url(r'^api/document/received/$', api.DocumentReceivedReadApi.as_view(), name='api-document-received'),
+    url(r'^api/document/delivered/$', api.DocumentDeliveredReadApi.as_view(), name='api-document-delivered'),
+    
     # SHIPMENT
     url(r'^api/shipment/manifestlist/$', api.ManifestingListApi.as_view(), name='api-manifesting-list'),
 

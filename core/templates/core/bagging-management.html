@@ -60,6 +60,7 @@
 </div>
 
 <div id="modal-container"></div>
+<div id="message-container"></div>
 
 <script type="text/template" id="error-msg-template">
   <span class="error-msg" style="color:#E0B4B4; font-size:12px; font-style:italic;">Field required</span>
@@ -221,10 +222,33 @@
     }).done(function(response) {
         collections = [];
         resetTable();
+
+        $('#message-container').empty();
+
+        if (response.success === -1) {
+          var messageTemplateFunc = _.template($('#message-error-template').html());
+          var messageTemplate = messageTemplateFunc({ message : response.message });
+          $('#message-container').append(messageTemplate);
+
+          $('.message .close').on('click', function() {
+            $(this).closest('.message').transition('fade');
+          });
+
+          window.scrollTo(0, document.body.scrollHeight);
+
+          return;
+        }
     });
 
     return false;
   });
+</script>
+
+<script type="text/template" id="message-error-template">
+    <div class="ui negative message" style="margin-top:6mm">
+        <i class="close icon"></i>
+        <div class="header"><%=message %></div>
+    </div>
 </script>
 
 <!-- Form Script Notifiers -->
